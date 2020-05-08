@@ -1,0 +1,12 @@
+2020-05-08 at 15:06:08 CEST | given Data: MapNamenoname | Date: insert | coords: 
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+
+2020-05-08 at 15:06:08 CEST | fixing coordinates
+2020-05-08 at 15:06:08 CEST | mapname: noname
+2020-05-08 at 15:06:08 CEST | new Request found
+2020-05-08 at 15:06:08 CEST | Downloading mapName = noname | Date = insert | Coordinates = [LClasses.Coords;@9a1b15
+2020-05-08 at 15:06:08 CEST | running: [Ljava.lang.String;@45989562
