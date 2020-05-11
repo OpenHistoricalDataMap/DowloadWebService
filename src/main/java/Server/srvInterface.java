@@ -15,7 +15,6 @@ public interface srvInterface {
      */
     void fixFolders();
 
-
     /**
      * calls a script to generate an .osm Map-file with given coordinates as boundaries for a specified date.
      *
