@@ -1,12 +1,30 @@
-2020-05-08 at 15:06:08 CEST | given Data: MapNamenoname | Date: insert | coords: 
+2020-05-12 at 11:46:53 MESZ | given Data: MapNamenoname | Date: insert | coords: 
 x = 13.005 | y = 15.123
 x = 13.005 | y = 15.123
 x = 13.005 | y = 15.123
 x = 13.005 | y = 15.123
 x = 13.005 | y = 15.123
 
-2020-05-08 at 15:06:08 CEST | fixing coordinates
-2020-05-08 at 15:06:08 CEST | mapname: noname
-2020-05-08 at 15:06:08 CEST | new Request found
-2020-05-08 at 15:06:08 CEST | Downloading mapName = noname | Date = insert | Coordinates = [LClasses.Coords;@9a1b15
-2020-05-08 at 15:06:08 CEST | running: [Ljava.lang.String;@45989562
+2020-05-12 at 11:46:53 MESZ | fixing coordinates
+2020-05-12 at 11:46:53 MESZ | mapname: noname
+2020-05-12 at 11:46:53 MESZ | new Request found
+2020-05-12 at 11:46:53 MESZ | Downloading mapName = noname | Date = insert | Coordinates = [LClasses.Coords;@3f65f1a4
+2020-05-12 at 11:46:53 MESZ | running: [Ljava.lang.String;@7a67682c
+2020-05-12 at 11:48:13 MESZ | given Data: MapNamemapname | Date: insert | coords: 
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+
+2020-05-12 at 11:48:13 MESZ | fixing coordinates
+2020-05-12 at 11:48:13 MESZ | mapname: mapname
+2020-05-12 at 11:49:21 MESZ | given Data: MapNamemapnamme | Date: insert | coords: 
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+x = 13.005 | y = 15.123
+
+2020-05-12 at 11:49:21 MESZ | fixing coordinates
+2020-05-12 at 11:49:21 MESZ | mapname: mapnamme

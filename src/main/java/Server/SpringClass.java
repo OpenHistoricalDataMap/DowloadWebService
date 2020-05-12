@@ -3,6 +3,7 @@ package Server;
 import Classes.CommandReturn;
 import Classes.Coords;
 import Classes.QueueRequest;
+import ch.qos.logback.core.encoder.EchoEncoder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,7 +58,7 @@ public class SpringClass {
         return sb.toString();
     }
 
-    // 192.168.178.35:8080/request?coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123
+    // 192.168.178.35:8080/request?name=mapname&coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123&date=11-09-97
     @GetMapping("/request")
     public String request(@RequestParam(value = "name", defaultValue = "noname") String mapname,
                           @RequestParam(value = "coords") String coords,
@@ -81,10 +82,14 @@ public class SpringClass {
             float x;
             float y;
 
-            for (String s : coordsS) {
-                x = Float.parseFloat(s.split(",")[0]);
-                y = Float.parseFloat(s.split(",")[1]);
-                coordinates.add(new Coords(x, y));
+            try {
+                for (String s : coordsS) {
+                    x = Float.parseFloat(s.split(",")[0]);
+                    y = Float.parseFloat(s.split(",")[1]);
+                    coordinates.add(new Coords(x, y));
+                }
+            } catch (Exception e) {
+                serviceInstance.log(e.toString());
             }
 
             q = new QueueRequest(coordinates, date, mapname);
