@@ -58,7 +58,7 @@ public class SpringClass {
         return sb.toString();
     }
 
-    // 192.168.178.35:8080/request?name=mapname&coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123&date=11-09-97
+    // 192.168.178.35:8080/request?name=mapname&coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123&date=2117-12-11
     @GetMapping("/request")
     public String request(@RequestParam(value = "name", defaultValue = "noname") String mapname,
                           @RequestParam(value = "coords") String coords,
