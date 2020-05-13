@@ -28,6 +28,12 @@ public class SpringClass {
     public static Thread ftpThread;
 
     public static void main(String[] args) {
+        try {
+            setUpLogger();
+        } catch (IOException e) {
+            System.err.println("wasn't able to create loggerFiles ");
+        }
+
         serviceInstance = new Service();
         serviceThread = new Thread(serviceInstance);
         serviceThread.start();
@@ -37,6 +43,18 @@ public class SpringClass {
         ftpThread.start();
 
         SpringApplication.run(SpringClass.class, args);
+    }
+
+    private static void setUpLogger() throws IOException {
+        if (!(new File(StaticVariables.webServiceLogFile).exists())) {
+            new File(StaticVariables.logDefaultDir).mkdirs();
+            new File(StaticVariables.webServiceLogFile).createNewFile();
+        }
+
+        if (!(new File(StaticVariables.ftpLogFile).exists())) {
+            new File(StaticVariables.logDefaultDir).mkdirs();
+            new File(StaticVariables.ftpLogFile);
+        }
     }
 
     /**
