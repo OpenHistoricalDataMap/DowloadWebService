@@ -67,7 +67,7 @@ public class FTPService implements Runnable {
         serverFactory = new FtpServerFactory();
         listenerFactory = new ListenerFactory();
 
-        defineSSLConf();
+        //defineSSLConf();
         defineListener();
         setUpUser();
 

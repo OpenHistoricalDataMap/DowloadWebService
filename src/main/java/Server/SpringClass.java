@@ -7,9 +7,7 @@ import Server.FTPServer.FTPService;
 import ch.qos.logback.core.encoder.EchoEncoder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -66,7 +64,7 @@ public class SpringClass {
             serviceThread.interrupt();
     }
 
-    @GetMapping("/service")
+    @RequestMapping ("/service")
     public String webServiceStatus() {
         StringBuilder sb = new StringBuilder();
         sb.append("<head> <title> WebService status</title> </head>");
@@ -86,13 +84,13 @@ public class SpringClass {
         return sb.toString();
     }
 
-    @GetMapping("/ftp")
+    @RequestMapping("/ftp")
     public String ftpServiceStatus() {
         return ("yeah... working on that");
     }
 
     // 192.168.178.35:8080/request?name=mapname&coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123&date=2117-12-11
-    @GetMapping("/request")
+    @RequestMapping(value = "/request")
     public String request(@RequestParam(value = "name", defaultValue = "noname") String mapname,
                           @RequestParam(value = "coords") String coords,
                           @RequestParam(value = "date", defaultValue = "insert") String date) {
@@ -162,7 +160,7 @@ public class SpringClass {
         return null;
     }
 
-    @GetMapping("/test")
+    @RequestMapping("/test")
     public String test() {
         return ("<head> <title> PageTitle </title> </head> <body> <h1> This is a Heading </h1> <p> This is a paragraph.</p> </body>");
     }
