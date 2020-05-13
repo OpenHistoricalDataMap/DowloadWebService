@@ -10,17 +10,23 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static Server.StaticVariables.*;
+
 public class Service implements Runnable, srvInterface{
     private String LISTEN_IP = "0.0.0.0"; // "::" ipv6 , "0.0.0.0" ipv4
     private int LISTEN_PORT = 5000;
 
-    private String OSM_DIR = "./maps/osm";
-    private String MAP_DIR = "./maps/map";
-    private String OHDM_DIR = "";
+    //fetching DirStrings from StaticVariables Class
+    private String OSM_DIR = osmDir;
+    private String MAP_DIR = mapDir;
+    private String OHDM_DIR = ohdmDir;
 
     private boolean LOGGING = true;
-    private File logFile = new File("Log.txt");
+    // fetching ftpLogFile from StaticVariables Class
+    private File logFile = new File(webServiceLogFile);
     private PrintStream logStream;
+
+    private String LOG_TAG = "WebService";
 
     List<QueueRequest> WORK_QUEUE = new ArrayList<>();
 
@@ -34,6 +40,7 @@ public class Service implements Runnable, srvInterface{
         } catch (IOException e) {
             e.printStackTrace();
         }
+        fixFolders();
         watch();
     }
 
@@ -92,11 +99,11 @@ public class Service implements Runnable, srvInterface{
             return;
 
         if (logStream == null)
-            throw new NullPointerException("ERROR: PrintStream for log not initialized");
+            throw new NullPointerException("ERROR: PrintStream for webServiceLog not initialized");
 
         SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         Date date = new Date(System.currentTimeMillis());
-        logStream.println(formatter.format(date) + " | " + msg);
+        logStream.println(LOG_TAG + " : " + formatter.format(date) + " | " + msg);
     }
 
     public int download_map(Coords[] coords, String date, String mapName) {

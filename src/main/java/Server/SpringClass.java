@@ -3,6 +3,7 @@ package Server;
 import Classes.CommandReturn;
 import Classes.Coords;
 import Classes.QueueRequest;
+import Server.FTPServer.FTPService;
 import ch.qos.logback.core.encoder.EchoEncoder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,10 +24,18 @@ public class SpringClass {
     public static Service serviceInstance;
     public static Thread serviceThread;
 
+    public static FTPService ftpInstance;
+    public static Thread ftpThread;
+
     public static void main(String[] args) {
         serviceInstance = new Service();
         serviceThread = new Thread(serviceInstance);
         serviceThread.start();
+
+        ftpInstance = new FTPService();
+        ftpThread = new Thread(ftpInstance);
+        ftpThread.start();
+
         SpringApplication.run(SpringClass.class, args);
     }
 
@@ -39,23 +48,29 @@ public class SpringClass {
             serviceThread.interrupt();
     }
 
-    @GetMapping("/status")
-    public String status() {
+    @GetMapping("/service")
+    public String webServiceStatus() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Service Running = " + serviceInstance.serviceRunning + "\n");
-        sb.append("WatcherThread currently working = " + serviceInstance.watcherWorking + "\n");
-        sb.append("current Queue length = " + serviceInstance.WORK_QUEUE.size() + "\n");
-        sb.append("QUEUE LIST: \n");
+        sb.append("<head> <title> WebService status</title> </head>");
+        sb.append("<p> Service Running = " + serviceInstance.serviceRunning + "</p>");
+        sb.append("<p> WatcherThread currently working = " + serviceInstance.watcherWorking + "</p>");
+        sb.append("<p> current Queue length = " + serviceInstance.WORK_QUEUE.size() + "</p>");
+        sb.append("<p> QUEUE LIST: </p>");
         int i = 0;
         for (QueueRequest r: serviceInstance.WORK_QUEUE) {
-            sb.append(r.getMapName()).append("\n");
-            sb.append("-------------------------\n");
-            sb.append(" - Position : " + i);
-            sb.append(" - Date : " + r.getDate());
-            sb.append(" - Classes.Coords : \n" + r.getPrintableCoordsString());
+            sb.append("<p>" + r.getMapName() + "</p>");
+            sb.append("<p> ------------------------- </p>");
+            sb.append("<p> - Position : " + i + "</p>");
+            sb.append("<p> - Date : " + r.getDate() + "</p>");
+            sb.append("<p> - Classes.Coords : \n" + r.getPrintableCoordsString() + "</p>");
             i++;
         }
         return sb.toString();
+    }
+
+    @GetMapping("/ftp")
+    public String ftpServiceStatus() {
+        return ("yeah... working on that");
     }
 
     // 192.168.178.35:8080/request?name=mapname&coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123&date=2117-12-11
@@ -128,4 +143,11 @@ public class SpringClass {
         }
         return null;
     }
+
+    @GetMapping("/test")
+    public String test() {
+        return ("<head> <title> PageTitle </title> </head> <body> <h1> This is a Heading </h1> <p> This is a paragraph.</p> </body>");
+    }
+
+
 }
