@@ -86,7 +86,7 @@ public class FTPService implements Runnable {
     private void defineSSLConf() {
         // define SSL configuration
         SslConfigurationFactory ssl = new SslConfigurationFactory();
-        ssl.setKeystoreFile(new File("src/main/resources/ftpServer.jks"));
+        ssl.setKeystoreFile(new File("./ftp/ftpServer.jks"));
         ssl.setKeystorePassword("password");
 
         // set the SSL configuration for the listener
