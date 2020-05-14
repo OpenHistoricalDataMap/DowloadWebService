@@ -13,15 +13,17 @@ import java.util.List;
 import static Server.StaticVariables.*;
 
 public class Service implements Runnable, srvInterface{
-    private String LISTEN_IP = "0.0.0.0"; // "::" ipv6 , "0.0.0.0" ipv4
-    private int LISTEN_PORT = 5000;
+    // this is currently not in use
+    //private String LISTEN_IP = "0.0.0.0"; // "::" ipv6 , "0.0.0.0" ipv4
+    //private int LISTEN_PORT = 5000;
 
     //fetching DirStrings from StaticVariables Class
     private String OSM_DIR = osmDir;
     private String MAP_DIR = mapDir;
     private String OHDM_DIR = ohdmDir;
 
-    private boolean LOGGING = true;
+    private boolean LOGGING = doesWebServiceLog;
+
     // fetching ftpLogFile from StaticVariables Class
     private File logFile = new File(webServiceLogFile);
     private PrintStream logStream;

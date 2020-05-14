@@ -32,7 +32,7 @@ public class FTPService implements Runnable {
     private UserManager um;
     private PropertiesUserManagerFactory userManagerFactory;
 
-    private boolean LOGGING = true;
+    private boolean LOGGING = doesFTPServiceLog;
     private File logFile = new File(ftpLogFile);
     private PrintStream logStream;
 
@@ -67,7 +67,7 @@ public class FTPService implements Runnable {
         serverFactory = new FtpServerFactory();
         listenerFactory = new ListenerFactory();
 
-        //defineSSLConf();
+        defineSSLConf();
         defineListener();
         setUpUser();
 
@@ -86,18 +86,12 @@ public class FTPService implements Runnable {
     private void defineSSLConf() {
         // define SSL configuration
         SslConfigurationFactory ssl = new SslConfigurationFactory();
-        ssl.setKeystoreFile(new File("src/main/resources/ftpServer.jks"));
+        ssl.setKeystoreFile(new File("./ftp/ftpServer.jks"));
         ssl.setKeystorePassword("password");
 
         // set the SSL configuration for the listener
         listenerFactory.setSslConfiguration(ssl.createSslConfiguration());
         listenerFactory.setImplicitSsl(true);
-
-        // replace the default listener
-        serverFactory.addListener("default", listenerFactory.createListener());
-        PropertiesUserManagerFactory userManagerFactory = new PropertiesUserManagerFactory();
-        userManagerFactory.setFile(new File("myusers.properties"));
-        serverFactory.setUserManager(userManagerFactory.createUserManager());
     }
 
     private void defineListener() {
@@ -106,7 +100,7 @@ public class FTPService implements Runnable {
         userManagerFactory = new PropertiesUserManagerFactory(); // adding a new UserManagementClass
         userManagerFactory.setFile(new File(ftpServiceUserPropertiesFile));//choose any. We're telling the FTP-server where to read its user list
         userManagerFactory.setPasswordEncryptor(new PasswordEncryptorsImpl()); // encrypts passwords of users by using the EncrImpl
-        serverFactory.setUserManager(userManagerFactory.createUserManager());
+        serverFactory.setUserManager(um);
     }
 
     private void setUpUser() throws IOException {
@@ -124,14 +118,11 @@ public class FTPService implements Runnable {
         try {
             um = userManagerFactory.createUserManager();
         } catch (FtpServerConfigurationException e) {
-            try {
+                new File(ftpDefaultDir).mkdirs();
                 new File(ftpServiceUserPropertiesFile).createNewFile();
-            } catch (IOException ex) {
-                new File("./ftp").mkdir();
-                new File(ftpServiceUserPropertiesFile).createNewFile();
-            }
             um = userManagerFactory.createUserManager();
         }
+
         try {
             um.save(user);//Save the user to the user list on the filesystem
         } catch (FtpException e1) {
