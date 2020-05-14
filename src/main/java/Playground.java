@@ -1,45 +1,114 @@
-import org.apache.ftpserver.FtpServer;
-import org.apache.ftpserver.FtpServerFactory;
-import org.apache.ftpserver.ftplet.FtpException;
-import org.apache.ftpserver.listener.ListenerFactory;
-import org.apache.ftpserver.ssl.SslConfigurationFactory;
-import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory;
+import FTPClient.FtpClientImpl;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
 
-import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.SocketException;
 
 public class Playground {
-    public static void main(String[] args) throws FtpException {
-        FtpServerFactory serverFactory = new FtpServerFactory();
+    static FTPClient client = null;
+    static String server = "localhost";
+    static int port = 5000;
+    static String user = "ohdmOffViewer";
+    static String pass = "H!3r0glyph Sat3llite Era$er";
+    public static void main(String [] args) {
 
-        ListenerFactory factory = new ListenerFactory();
+        //initialise the client
+        initPassiveClient();
 
-        // set the port of the listener
-        factory.setPort(2221);
-
-        // define SSL configuration
-        SslConfigurationFactory ssl = new SslConfigurationFactory();
-        ssl.setKeystoreFile(new File("ftpserver.jks"));
-        ssl.setKeystorePassword("password");
-
-        // set the SSL configuration for the listener
-        factory.setSslConfiguration(ssl.createSslConfiguration());
-        factory.setImplicitSsl(true);
-
-        // replace the default listener
-        serverFactory.addListener("default", factory.createListener());
-
-        PropertiesUserManagerFactory userManagerFactory = new PropertiesUserManagerFactory();
-        userManagerFactory.setFile(new File("users.properties"));
-
-        serverFactory.setUserManager(userManagerFactory.createUserManager());
-
-        // start the server
-        FtpServer server = serverFactory.createServer();
-        //mFtpServer = server;
-        try {
-            server.start();
-        } catch (FtpException e) {
-            e.printStackTrace();
+        //do stuff
+        FTPFile[] files = listFiles("./");
+        if( files != null ) {
+            System.err.println("Listing Files:");
+            for( FTPFile f : files) {
+                System.err.println(f.getName());
+            }
         }
+
+        //close the client
+        close();
+    }
+
+    /**
+     * getPassiveClient retrive a FTPClient object that's set to local passive mode
+     *
+     * @return FTPClient
+     */
+    public static FTPClient initPassiveClient() {
+        if( client == null ) {
+            System.out.println("Getting passive FTP client");
+            client = new FTPClient();
+
+            try {
+                client.connect(server, port);
+                // After connection attempt, you should check the reply code to verify
+                // success.
+                int reply = client.getReplyCode();
+
+                if(!FTPReply.isPositiveCompletion(reply)) {
+                    client.disconnect();
+                    System.err.println("FTP server refused connection.");
+                    System.exit(0);
+                }
+
+                //after connecting to the server set the local passive mode
+                //client.enterLocalPassiveMode();
+                client.enterRemoteActiveMode(InetAddress.getByName(server), port);
+
+                //send username and password to login to the server
+                if( !client.login(user, pass) ) {
+                    System.err.println("Could not login to FTP Server");
+                    System.exit(0);
+                }
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return client;
+    }
+
+    public static void close() {
+        if( client == null ) {
+            System.err.println("Nothing to close, the FTPClient wasn't initialized");
+            return;
+        }
+
+        //be polite and logout & close the connection before the application finishes
+        try {
+            client.logout();
+            client.disconnect();
+        } catch (IOException e) {
+            String message = "Could not logout";
+            System.err.println(message+"\n");
+        }
+    }
+
+    /**
+     * listFiles uses the FTPClient to retrieve files in the specified directory
+     *
+     * @return array of FTPFile objects
+     */
+    private static FTPFile[] listFiles(String dir) {
+        if( client == null ) {
+            System.err.println("First initialize the FTPClient by calling 'initFTPPassiveClient()'");
+            return null;
+        }
+
+        try {
+            System.out.println("DEBUG: Getting file listing for current director");
+            FTPFile[] files = client.listFiles(dir);
+
+            return files;
+        } catch (IOException e) {
+            String message = "";
+            System.err.println(message+"\n");
+        }
+
+        return null;
     }
 }
