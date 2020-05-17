@@ -86,7 +86,7 @@ public class FTPService implements Runnable {
     private void defineSSLConf() {
         // define SSL configuration
         SslConfigurationFactory ssl = new SslConfigurationFactory();
-        ssl.setKeystoreFile(new File("src/main/resources/ftpServer.jks"));
+        ssl.setKeystoreFile(new File("./ftp/ftpServer.jks"));
         ssl.setKeystorePassword("password");
 
         // set the SSL configuration for the listener
@@ -95,7 +95,7 @@ public class FTPService implements Runnable {
     }
 
     private void defineListener() {
-        listenerFactory.setPort(ftpPort);// set the port of the listener (choose your desired port, not 1234)
+        listenerFactory.setPort(ftpPort); // set the port of the listener (choose your desired port, not 1234)
         serverFactory.addListener("default", listenerFactory.createListener()); // adding a "default Listener"
         userManagerFactory = new PropertiesUserManagerFactory(); // adding a new UserManagementClass
         userManagerFactory.setFile(new File(ftpServiceUserPropertiesFile));//choose any. We're telling the FTP-server where to read its user list

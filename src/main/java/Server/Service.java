@@ -116,7 +116,7 @@ public class Service implements Runnable, srvInterface{
                 '-t', f'{date}', '-o', f'{OSM_DIR}{mapname}.osm']
         */
 
-        String[] template = {"java", "-jar", OHDM_DIR, "OHDMConverter.jar", "-r", "db_inter.txt", "-p",
+        String[] template = {"java", "-jar", OHDM_DIR, "OHDMConverter.jar", "-r", "./db_inter.txt", "-p",
                 "\"POLYGON((" + rearrangeCoordsForScript(coords) + "))", "-t", "\"" + date + "\"",
                 "-o", OSM_DIR + mapName + ".osm"};
 
