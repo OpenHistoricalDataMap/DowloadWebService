@@ -1,21 +1,19 @@
 package Server;
 
-import Classes.CommandReturn;
 import Classes.Coords;
 import Classes.QueueRequest;
 import Server.FTPServer.FTPService;
-import ch.qos.logback.core.encoder.EchoEncoder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.*;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import static Server.StaticVariables.*;
 
 @SpringBootApplication
 @RestController
@@ -28,6 +26,9 @@ public class SpringClass {
     public static Thread ftpThread;
 
     public static void main(String[] args) {
+        // initializes Static Variables by reading them from init.txt
+        StaticVariables.init();
+
         try {
             setUpLogger();
         } catch (IOException e) {
@@ -42,6 +43,7 @@ public class SpringClass {
         ftpThread = new Thread(ftpInstance);
         ftpThread.start();
 
+        System.getProperties().put("server.port", webPort);
         SpringApplication.run(SpringClass.class, args);
     }
 
@@ -57,9 +59,7 @@ public class SpringClass {
         }
     }
 
-    /**
-     * method to queue a map into the "REQUEST QUEUE"
-     */
+    /** method to queue a map into the "REQUEST QUEUE" */
     public void queue_map(QueueRequest q) {
         serviceInstance.WORK_QUEUE.add(q);
         if (!serviceInstance.watcherWorking)
@@ -94,8 +94,8 @@ public class SpringClass {
     // 192.168.178.35:8080/request?name=mapname&coords=13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123&date=2117-12-11
     @GetMapping("/request")
     public String request(@RequestParam(value = "name", defaultValue = "noname") String mapname,
-                          @RequestParam(value = "coords") String coords,
-                          @RequestParam(value = "date", defaultValue = "insert") String date) {
+                          @RequestParam(value = "coords", defaultValue = "13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123_13.005,15.123") String coords,
+                          @RequestParam(value = "date", defaultValue = "2000-12-11") String date) {
 
         /**
          endpoint for map requests
@@ -164,7 +164,7 @@ public class SpringClass {
 
     @GetMapping("/test")
     public String test() {
-        return ("<head> <title> PageTitle </title> </head> <body> <h1> This is a Heading </h1> <p> This is a paragraph.</p> </body>");
+        return ("<head> <title> Running ? </title> </head> <body> <h1> Am I running? </h1> <p> i guess i do </p> </body>");
     }
 
 
