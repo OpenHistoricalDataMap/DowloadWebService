@@ -1,0 +1,8 @@
+servername:141.45.146.200
+portnumber:5432
+username:ohdm
+pwd:SoSe+2020
+dbname:postgis_db
+schema:rendering
+maxThreads:5
+renderoutput:generic
