@@ -1,0 +1,8 @@
+[init]
+logDefaultDir = log
+mapsDefaultDir = maps
+ftpDefaultDir = ftp
+webPort = 5001
+ftpPort = 5000
+standardUserName = ohdmOffViewer
+standardUserPassword = H!3r0glyph Sat3llite Era$er
