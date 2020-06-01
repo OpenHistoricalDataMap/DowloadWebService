@@ -1,16 +1,18 @@
 package Server;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 public class StaticVariables {
     public static final String defaultInitFile = "./init.txt";
     // ---------------------------- will be read from File ----------------------------//
-    public static String logDefaultDir = "./log";
-    public static String mapsDefaultDir = "./maps";
-    public static String ftpDefaultDir = "./ftp";
+    public static String logDefaultDir = "./log/";
+    public static String mapsDefaultDir = "./maps/";
+    public static String ftpDefaultDir = "./ftp/";
 
-    public static boolean doesFTPServiceLog = true;
-    public static boolean doesWebServiceLog = true;
+    public static boolean logTerminalOutput = true;
+
+    public static int maxLogFileSize = 512; // in kilobytes
 
     public static int webPort = 5001;
     public static int ftpPort = 5000;
@@ -27,7 +29,7 @@ public class StaticVariables {
     public static String ohdmDir = "";
 
     public static String ftpServiceMapDir = mapDir;
-    public static String ftpServiceUserPropertiesFile = ftpDefaultDir + "/userList.properties";
+    public static String ftpServiceUserPropertiesFile = ftpDefaultDir + "userList.properties";
 
 
 
@@ -74,12 +76,10 @@ public class StaticVariables {
     }
 
     private static void giveStandardValues() {
-        doesFTPServiceLog = true;
-        doesWebServiceLog = true;
 
-        logDefaultDir = "log";
-        mapsDefaultDir = "maps";
-        ftpDefaultDir = "ftp";
+        logDefaultDir = "./log/";
+        mapsDefaultDir = "./maps/";
+        ftpDefaultDir = "./ftp/";
 
         webPort = 5001;
         ftpPort = 5000;
@@ -95,10 +95,6 @@ public class StaticVariables {
             case "mapsDefaultDir": mapsDefaultDir = s[1].trim(); break;
 
             case "ftpDefaultDir": ftpDefaultDir = s[1].trim(); break;
-
-            case "doesFTPServiceLog": doesFTPServiceLog = Boolean.parseBoolean(s[1].trim()); break;
-
-            case "doesWebServiceLog": doesWebServiceLog = Boolean.parseBoolean(s[1].trim()); break;
 
             case "webPort": try {
                     webPort = Integer.parseInt(s[1].trim());
@@ -125,22 +121,17 @@ public class StaticVariables {
         new File(ftpDefaultDir).mkdir();
         new File(mapsDefaultDir).mkdir();
 
-           ftpLogFile = logDefaultDir + "/ftpLog.txt";
-           webServiceLogFile = logDefaultDir + "/webServiceLog.txt";
-
-           osmDir = mapsDefaultDir + "/osm";
-           mapDir = mapsDefaultDir + "/map";
-           ohdmDir = "";
+        osmDir = mapsDefaultDir + "osm";
+        mapDir = mapsDefaultDir + "map";
+        ohdmDir = "";
 
 
         ftpServiceMapDir = mapDir;
-        ftpServiceUserPropertiesFile = ftpDefaultDir + "/userList.properties";
+        ftpServiceUserPropertiesFile = ftpDefaultDir + "userList.properties";
 
         new File(osmDir).mkdir();
         new File(mapDir).mkdir();
 
-        new File(ftpLogFile).createNewFile();
-        new File(webServiceLogFile).createNewFile();
         new File(ftpServiceUserPropertiesFile).createNewFile();
     }
 }

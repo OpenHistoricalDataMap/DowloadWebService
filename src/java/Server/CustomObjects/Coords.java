@@ -1,10 +1,10 @@
 package Server.CustomObjects;
 
 public class Coords {
-    float x;
-    float y;
+    public Double x;
+    public Double y;
 
-    public Coords(float x, float y) {
+    public Coords(double x, double y) {
         this.x = x;
         this.y = y;
     }
