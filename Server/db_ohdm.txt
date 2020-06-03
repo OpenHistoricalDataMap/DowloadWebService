@@ -1,8 +1,0 @@
-servername:127.0.0.1
-portnumber:5432
-username:ohdm
-pwd:SoSe+2020
-dbname:postgis_db
-schema:ohdm
-maxThreads:5
-
