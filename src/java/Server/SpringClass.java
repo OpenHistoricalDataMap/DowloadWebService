@@ -17,11 +17,12 @@ import java.util.List;
 
 import static Server.CustomObjects.LogType.ERROR;
 import static Server.CustomObjects.LogType.INFO;
-import static Server.StaticVariables.*;
 
 @SpringBootApplication
 @RestController
 public class SpringClass {
+
+    private static String initFile = "init.txt";
 
     private static ServiceNew serviceInstance;
     private static Thread serviceThread;
@@ -32,16 +33,17 @@ public class SpringClass {
     private String TAG = "Spring-Thread";
 
     public static void main(String[] args) throws IOException {
-
         // just standard inits for the Variables used in this Project
         // most of them are read from the init.txt
         // but more of that in the OHDM wiki
+
+        new StaticVariables("init.txt");
         StaticVariables.init();
         StaticVariables.createStdFilesAndDirs();
 
         // Logger is a singleton Class due to the availability need
         // the Logger is a System in itself
-        new Logger();
+        new Logger(StaticVariables.logDefaultDir, StaticVariables.maxLogFileSize, StaticVariables.logTerminalOutput);
         Logger.instance.start();
 
         // the service instance, which just goes through a couple of lists and sets things to what they are
@@ -52,12 +54,12 @@ public class SpringClass {
         serviceThread.start();
 
         // the ftp service, which allows the Android App to download the .map files
-        ftpInstance = new FTPService();
+        ftpInstance = new FTPService(StaticVariables.ftpPort, StaticVariables.ftpServiceUserPropertiesFile,  StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.ftpServiceMapDir, StaticVariables.ftpDefaultDir);
         ftpThread = new Thread(ftpInstance);
         ftpThread.start();
 
         // and here starts the Spring Application with the server port set to the
-        // before given Port in StaticVariables
+        // before given Port in Server.StaticVariables
         System.getProperties().put("server.port", StaticVariables.webPort);
         SpringApplication.run(SpringClass.class, args);
     }
@@ -120,7 +122,7 @@ public class SpringClass {
             sb.append(" | ----------------------------------------------------------------------" +"<br>");
             sb.append(" | - Date : " + r.getDate() + "<br>");
             sb.append(" | - Coords : \n" + r.getPrintableCoordsString() + "<br>");
-            sb.append(" | - Link to download .map file : <a href=\"ftp:"+ standardUserName + ":" +standardUserPassword + "@141.45.146.200:5000/" + r.getMapName()+ ".map\">direct link</a> <br>");
+            sb.append(" | - Link to download .map file : <a href=\"ftp:"+ StaticVariables.standardUserName + ":" + StaticVariables.standardUserPassword + "@141.45.146.200:5000/" + r.getMapName()+ ".map\">direct link</a> <br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
         }
@@ -151,7 +153,7 @@ public class SpringClass {
             }
 
             // TODO : add id system
-            q = new QueryRequest(coordinates, date, mapname, 0000);
+            q = new QueryRequest(coordinates, date, mapname,0000, StaticVariables.osmDir, StaticVariables.mapDir);
 
             Logger.instance.addLogEntry(INFO, TAG,"given Data: " + mapname + " | Date: " + date + " | coords: \n" + q.getPrintableCoordsString());
 
@@ -254,8 +256,8 @@ public class SpringClass {
      * @return true if existent, false if not
      */
     public boolean map_exist(String nme) {
-        File fOSM = new File(osmDir + nme);
-        File fMAP = new File(mapDir + nme);
+        File fOSM = new File(StaticVariables.osmDir + nme);
+        File fMAP = new File(StaticVariables.mapDir + nme);
 
         if (!(fOSM.exists() && !fOSM.isDirectory()))
             if (!(fMAP.exists() && !fOSM.isDirectory()))

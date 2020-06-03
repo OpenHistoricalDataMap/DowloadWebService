@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static Server.StaticVariables.*;
-
 public class Logger extends Thread implements LoggerInt {
 
     public static Logger instance;
@@ -27,7 +25,15 @@ public class Logger extends Thread implements LoggerInt {
     private Boolean isWaiting = false;
     public boolean isRunning = false;
 
-    public Logger() {
+    private String logDefaultDir;
+    private int maxLogFileSize;
+    private boolean logTerminalOutput;
+
+    public Logger(String logDefaultDir, int maxLogFileSize, boolean logTerminalOutput) {
+
+        this.logDefaultDir = logDefaultDir;
+        this.maxLogFileSize = maxLogFileSize;
+        this.logTerminalOutput = logTerminalOutput;
 
         this.baseFile = "LOG";
 
@@ -60,7 +66,7 @@ public class Logger extends Thread implements LoggerInt {
         }
     }
 
-    private void swapToNextDayDirIfNecessary() {
+    private void swapToNextDayDirIfNecessary() throws IOException {
         Date date = new Date(System.currentTimeMillis());
 
         if (!currentWritingDir.equals(logDefaultDir + dirFormatter.format(date))) {
@@ -73,11 +79,10 @@ public class Logger extends Thread implements LoggerInt {
 
             currentWritingFile = currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(System.currentTimeMillis()) +"].txt";;
 
-            try {
-                new File(currentWritingFile).createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            File file = new File(currentWritingFile);
+
+            if (!file.exists())
+                file.createNewFile();
         }
     }
 
@@ -93,7 +98,11 @@ public class Logger extends Thread implements LoggerInt {
         }
 
         while (true) {
-            swapToNextDayDirIfNecessary();
+            try {
+                swapToNextDayDirIfNecessary();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             swapToNextFileIfNecessary();
             if (BUFFER_LIST.isEmpty()) {
                 isWaiting = true;
@@ -113,6 +122,9 @@ public class Logger extends Thread implements LoggerInt {
     private void writeEntry(LogEntry entry) throws IOException {
         String temp = "";
         File file = new File(currentWritingFile);
+
+        if (!file.exists())
+            file.createNewFile();
 
         Date date = new Date(System.currentTimeMillis());
         String input = entry.type + " | " + logFormatter.format(date) + " | " + entry.TAG + " : " + entry.message;

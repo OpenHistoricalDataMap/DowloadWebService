@@ -1,10 +1,12 @@
 package Server.WebService;
 
-public interface srvInterface {
+import Server.CustomObjects.QueryRequest;
+
+public interface srvInterface extends Runnable{
 
     /**
-     * checks WORK_QUEUE for requested maps and downloads them
+     * adding
      * ( will run in thread )
      */
-    //void watch();
+    void add(QueryRequest request);
 }

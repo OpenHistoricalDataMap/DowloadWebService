@@ -4,14 +4,21 @@ import java.io.File;
 import java.io.IOException;
 
 public class StaticVariables {
-    public static final String defaultInitFile = "./init.txt";
+
+    public static StaticVariables instance;
+
+    public StaticVariables(String defaultInitFile) {
+        this.defaultInitFile = defaultInitFile;
+        instance = this;
+    }
+
+    public String defaultInitFile = "./init.txt";
     // ---------------------------- will be read from File ----------------------------//
     public static String logDefaultDir = "./log/";
     public static String mapsDefaultDir = "./maps/";
     public static String ftpDefaultDir = "./ftp/";
 
     public static boolean logTerminalOutput = true;
-
     public static int maxLogFileSize = 512; // in kilobytes
 
     public static int webPort = 5001;
@@ -87,7 +94,6 @@ public class StaticVariables {
         standardUserName = "ohdmOffViewer";
         standardUserPassword = "H!3r0glyph Sat3llite Era$er";
     }
-
     private static void assignValue(String[] s) {
         switch (s[0]) {
             case "logDefaultDir": logDefaultDir = s[1].trim(); break;
@@ -97,25 +103,25 @@ public class StaticVariables {
             case "ftpDefaultDir": ftpDefaultDir = s[1].trim(); break;
 
             case "webPort": try {
-                    webPort = Integer.parseInt(s[1].trim());
-                } catch (NumberFormatException e) {
-                    webPort = 5001;
-                }break;
+                webPort = Integer.parseInt(s[1].trim());
+            } catch (NumberFormatException e) {
+                webPort = 5001;
+            }break;
 
             case "ftpPort": try {
-                    ftpPort = Integer.parseInt(s[1].trim());
-                } catch (NumberFormatException e) {
-                    ftpPort = 5000;
-                }break;
+                ftpPort = Integer.parseInt(s[1].trim());
+            } catch (NumberFormatException e) {
+                ftpPort = 5000;
+            }break;
 
             case "standardUserName": standardUserName = s[1].trim();break;
 
             case "standardUserPassword": standardUserPassword = s[1].trim();break;
 
-            default: System.out.println("couldn't find " + s[0] + " in list | Value = " + s[1]);
+            default:
+                System.out.println("[INIT-INFO] - couldn't find " + s[0] + " in list | Value = " + s[1]);
         }
     }
-
     public static void createStdFilesAndDirs() throws IOException {
         new File(logDefaultDir).mkdir();
         new File(ftpDefaultDir).mkdir();

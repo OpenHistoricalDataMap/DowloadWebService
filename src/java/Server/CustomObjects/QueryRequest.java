@@ -5,9 +5,6 @@ import Server.LogService.Logger;
 import java.io.*;
 import java.util.List;
 
-import static Server.StaticVariables.mapDir;
-import static Server.StaticVariables.osmDir;
-
 public class QueryRequest extends Thread {
 
     private List<Coords> coordinates;
@@ -21,7 +18,13 @@ public class QueryRequest extends Thread {
 
     private String TAG;
 
-    public QueryRequest(List<Coords> coordinates, String date, String mapName, int id) {
+    private String osmDir;
+    private String mapDir;
+
+    public QueryRequest(List<Coords> coordinates, String date, String mapName, int id, String osmDir, String mapDir) {
+        this.osmDir = osmDir;
+        this.mapDir = mapDir;
+
         this.coordinates = coordinates;
         this.date = date;
         this.mapName = mapName;

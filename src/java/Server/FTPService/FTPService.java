@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static Server.StaticVariables.*;
-
 public class FTPService implements Runnable {
 
     private FtpServer server;
@@ -33,7 +31,23 @@ public class FTPService implements Runnable {
     private UserManager um;
     private PropertiesUserManagerFactory userManagerFactory;
 
+    private int ftpPort;
+    private String ftpServiceUserPropertiesFile;
+    private String standardUserName;
+    private String standardUserPassword;
+    private String ftpServiceMapDir;
+    private String ftpDefaultDir;
+
     private String TAG = "FTPService-Thread";
+
+    public FTPService(int ftpPort, String ftpServiceUserPropertiesFile, String standardUserName, String standardUserPassword, String ftpServiceMapDir, String ftpDefaultDir) {
+        this.ftpPort = ftpPort;
+        this.ftpServiceUserPropertiesFile = ftpServiceUserPropertiesFile;
+        this.standardUserName = standardUserName;
+        this.standardUserPassword = standardUserPassword;
+        this.ftpServiceMapDir = ftpServiceMapDir;
+        this.ftpDefaultDir = ftpDefaultDir;
+    }
 
     @Override
     public void run() {
