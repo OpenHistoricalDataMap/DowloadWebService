@@ -25,6 +25,8 @@ public class Logger extends Thread implements LoggerInt {
     private Boolean isWaiting = false;
     public boolean isRunning = false;
 
+    private boolean newDirCreated = false;
+
     private String logDefaultDir;
     private int maxLogFileSize;
     private boolean logTerminalOutput;
@@ -55,14 +57,14 @@ public class Logger extends Thread implements LoggerInt {
             this.interrupt();
     }
 
-    private void swapToNextFileIfNecessary() {
+    private void swapToNextFileIfNecessary() throws IOException {
         if (new File(currentWritingFile).length() / 1000 > maxLogFileSize) {
             currentWritingFile = baseFile.replace(".txt", "")+ "[" + fileFormatter.format(System.currentTimeMillis()) + "].txt";
-            try {
-                new File(currentWritingFile).createNewFile();
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
+
+            File file = new File(currentWritingFile);
+
+            if (!file.exists())
+                file.createNewFile();
         }
     }
 
@@ -83,6 +85,8 @@ public class Logger extends Thread implements LoggerInt {
 
             if (!file.exists())
                 file.createNewFile();
+
+            newDirCreated = true;
         }
     }
 
@@ -103,7 +107,11 @@ public class Logger extends Thread implements LoggerInt {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            swapToNextFileIfNecessary();
+            try {
+                swapToNextFileIfNecessary();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             if (BUFFER_LIST.isEmpty()) {
                 isWaiting = true;
                 try { wait(); } catch (InterruptedException e) { /*kindly ignore*/ }

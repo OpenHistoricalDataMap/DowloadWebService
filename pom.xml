@@ -2,17 +2,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.3.0.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
+
 	<groupId>ohdm</groupId>
-	<artifactId>mapDownloadService</artifactId>
-	<version>0.5-SNAPSHOT</version>
-	<name>mapDownloadService</name>
+	<artifactId>runner</artifactId>
+	<version>0.5.2-SNAPSHOT</version>
+	<name>runner</name>
 	<description>mapDownloadService for Android App</description>
+	<!-- lookup parent from repository -->
 
 	<properties>
 		<java.version>11</java.version>
@@ -53,9 +56,37 @@
 			<artifactId>ftpserver-core</artifactId>
 			<version>1.1.1</version>
 		</dependency>
-    </dependencies>
+	<!-- sftp Server - ssh base apache -->
+
+		<dependency>
+			<groupId>org.apache.sshd</groupId>
+			<artifactId>sshd-core</artifactId>
+			<version>1.7.0</version>
+		</dependency>
+
+		<!-- sshClient -->
+		<!-- https://mvnrepository.com/artifact/com.jcraft/jsch -->
+		<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.55</version>
+		</dependency>
+
+
+
+	</dependencies>
 
 	<build>
+		<sourceDirectory>src/java</sourceDirectory>
+		<resources>
+			<resource>
+				<directory>src/java</directory>
+				<includes>
+					<include>**/*.xml</include>
+					<include>**/*.properties</include>
+				</includes>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

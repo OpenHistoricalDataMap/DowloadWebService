@@ -6,15 +6,12 @@
 // '//' Comment
 
 [init]
-doesFTPServiceLog = true
-doesWebServiceLog = true
-
-logDefaultDir = ./log
-mapsDefaultDir = ./maps
-ftpDefaultDir = ./ftp
+logDefaultDir = log/
+mapsDefaultDir = maps/
+sftpDefaultDir = sftp/
 
 webPort = 5001
-ftpPort = 5000
+sftpPort = 5002
 
 standardUserName = ohdmOffViewer
 standardUserPassword = H!3r0glyph Sat3llite Era$er

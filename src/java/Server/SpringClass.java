@@ -2,8 +2,9 @@ package Server;
 
 import Server.CustomObjects.Coords;
 import Server.CustomObjects.QueryRequest;
-import Server.FTPService.FTPService;
+import Server.FileService.FTPService.FTPService;
 import Server.LogService.Logger;
+import Server.FileService.SFTPService.SftpService;
 import Server.WebService.ServiceNew;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,8 +28,12 @@ public class SpringClass {
     private static ServiceNew serviceInstance;
     private static Thread serviceThread;
 
-    private static FTPService ftpInstance;
-    private static Thread ftpThread;
+    // depricated
+    // private static FTPService ftpInstance;
+    // private static Thread ftpThread;
+
+    private static SftpService sftpInstance;
+    private static Thread sftpThread;
 
     private String TAG = "Spring-Thread";
 
@@ -37,7 +42,7 @@ public class SpringClass {
         // most of them are read from the init.txt
         // but more of that in the OHDM wiki
 
-        new StaticVariables("init.txt");
+        new StaticVariables(initFile);
         StaticVariables.init();
         StaticVariables.createStdFilesAndDirs();
 
@@ -54,9 +59,15 @@ public class SpringClass {
         serviceThread.start();
 
         // the ftp service, which allows the Android App to download the .map files
-        ftpInstance = new FTPService(StaticVariables.ftpPort, StaticVariables.ftpServiceUserPropertiesFile,  StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.ftpServiceMapDir, StaticVariables.ftpDefaultDir);
+        // depricated
+        /*ftpInstance = new FTPService(StaticVariables.ftpPort, StaticVariables.ftpServiceUserPropertiesFile,  StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.ftpServiceMapDir, StaticVariables.ftpDefaultDir);
         ftpThread = new Thread(ftpInstance);
-        ftpThread.start();
+        ftpThread.start();*/
+
+        // the sftp service, which allows the Android App to download the .map files
+        sftpInstance = new SftpService(StaticVariables.sftpPort, StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.sftpDefaultKeyFile, StaticVariables.sftpServiceMapDir);
+        sftpThread = new Thread(sftpInstance);
+        sftpThread.start();
 
         // and here starts the Spring Application with the server port set to the
         // before given Port in Server.StaticVariables
@@ -71,6 +82,7 @@ public class SpringClass {
         sb.append("<head> <title> WebService status</title> </head>");
         sb.append("<p> Service Running = " + serviceInstance.isRunning() + "</p>");
         sb.append("<p> WatcherThread currently working = " + serviceInstance.isActive() + "</p>");
+        sb.append("<p> sftp Service running = " + sftpInstance.isRunning + "</p>");
         sb.append("<p> current Buffer list length = " + serviceInstance.getBUFFER_LIST().size() + "</p>");
         sb.append("<p> current Worker list length = " + serviceInstance.getWORKER_LIST().size() + "</p>");
         sb.append("<p> current Error list length = " + serviceInstance.getERROR_LIST().size() + "</p>");
@@ -122,7 +134,7 @@ public class SpringClass {
             sb.append(" | ----------------------------------------------------------------------" +"<br>");
             sb.append(" | - Date : " + r.getDate() + "<br>");
             sb.append(" | - Coords : \n" + r.getPrintableCoordsString() + "<br>");
-            sb.append(" | - Link to download .map file : <a href=\"ftp:"+ StaticVariables.standardUserName + ":" + StaticVariables.standardUserPassword + "@141.45.146.200:5000/" + r.getMapName()+ ".map\">direct link</a> <br>");
+            sb.append(" | - Link to download .map file : <a href=\"sftp:"+ StaticVariables.standardUserName + ":" + StaticVariables.standardUserPassword + "@141.45.146.200:5002/" + r.getMapName()+ ".map\">direct link</a> <br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
         }
@@ -133,7 +145,7 @@ public class SpringClass {
     @RequestMapping(value = "/request")
     public String request(@RequestParam(value = "name", defaultValue = "testRequest") String mapname,
                           @RequestParam(value = "coords", defaultValue = "10,45_10,55_15,55_15,45_10,45") String coords,
-                          @RequestParam(value = "date", defaultValue = "2000-12-11") String date) {
+                          @RequestParam(value = "date", defaultValue = "1500-12-11") String date) {
 
         List<Coords> coordinates = new ArrayList<>();
         QueryRequest q = null;
@@ -198,12 +210,20 @@ public class SpringClass {
     }
 
     @RequestMapping("/log")
-    public String log() {
+    public String log(@RequestParam(value = "log", defaultValue = "")String selectedLog) {
         BufferedReader br;
-        try {
-            br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(Logger.instance.currentWritingFile))));
-        } catch (FileNotFoundException e) {
-            return "couldn't read logger";
+        if (selectedLog.equals("daemon")) {
+            try {
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(new File("daemonLog.txt"))));
+            } catch (FileNotFoundException e) {
+                return "couldn't read logger";
+            }
+        } else {
+            try {
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(Logger.instance.currentWritingFile))));
+            } catch (FileNotFoundException e) {
+                return "couldn't read logger | " + Logger.instance.currentWritingFile;
+            }
         }
 
         String output = "";

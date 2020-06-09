@@ -1,53 +1,50 @@
 package Server;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
-public class StaticVariables {
-
-    public static StaticVariables instance;
+class StaticVariables {
 
     public StaticVariables(String defaultInitFile) {
-        this.defaultInitFile = defaultInitFile;
-        instance = this;
+        StaticVariables.defaultInitFile = defaultInitFile;
     }
 
-    public String defaultInitFile = "./init.txt";
+    public static String defaultInitFile = "./init.txt";
     // ---------------------------- will be read from File ----------------------------//
     public static String logDefaultDir = "./log/";
     public static String mapsDefaultDir = "./maps/";
-    public static String ftpDefaultDir = "./ftp/";
+    public static String sftpDefaultDir = "./sftp/";
 
     public static boolean logTerminalOutput = true;
     public static int maxLogFileSize = 512; // in kilobytes
 
     public static int webPort = 5001;
-    public static int ftpPort = 5000;
+    //public static int ftpPort = 5000;
+    public static int sftpPort = 5002;
 
     // default values !!!! ALWAYS CHANGE IN FILE !!!!
-    public static String standardUserName = "ohdmOffViewer";
-    public static String standardUserPassword = "H!3r0glyph Sat3llite Era$er";
+    public static String standardUserName = "";
+    public static String standardUserPassword = "";
     // -------------------------------------------------------------------------------//
-    public static String ftpLogFile;
-    public static String webServiceLogFile;
 
     public static String osmDir;
     public static String mapDir;
     public static String ohdmDir = "";
 
-    public static String ftpServiceMapDir = mapDir;
-    public static String ftpServiceUserPropertiesFile = ftpDefaultDir + "userList.properties";
+    public static String sftpServiceMapDir = mapDir;
+    public static String sftpDefaultKeyFile = sftpDefaultDir + "hostKeySave.ser";
 
+    // -------------------------------------------------------------------------------//
 
+    public static void init() throws IOException {
+        if (!new File(defaultInitFile).exists())
+         throw new IOException("couldn't find init.txt File in the execution directory !!!!");
 
-    public static void init() {
-        giveStandardValues();
-        /* if (!new File(defaultInitFile).exists()) {
+         if (!new File(defaultInitFile).exists()) {
             giveStandardValues();
             return;
-        } */
+        }
 
-        /*BufferedReader dis = null;
+        BufferedReader dis = null;
         try {
             dis = new BufferedReader(new InputStreamReader(new FileInputStream(new File(defaultInitFile))));
         } catch (FileNotFoundException e) {
@@ -78,18 +75,16 @@ public class StaticVariables {
                 valuesSplit) {
             assignValue(s);
         }
-
-         */
     }
 
     private static void giveStandardValues() {
 
-        logDefaultDir = "./log/";
-        mapsDefaultDir = "./maps/";
-        ftpDefaultDir = "./ftp/";
+        logDefaultDir = "log/";
+        mapsDefaultDir = "maps/";
+        sftpDefaultDir = "sftp/";
 
         webPort = 5001;
-        ftpPort = 5000;
+        sftpPort = 5002;
 
         standardUserName = "ohdmOffViewer";
         standardUserPassword = "H!3r0glyph Sat3llite Era$er";
@@ -100,7 +95,7 @@ public class StaticVariables {
 
             case "mapsDefaultDir": mapsDefaultDir = s[1].trim(); break;
 
-            case "ftpDefaultDir": ftpDefaultDir = s[1].trim(); break;
+            case "sftpDefaultDir": sftpDefaultDir = s[1].trim(); break;
 
             case "webPort": try {
                 webPort = Integer.parseInt(s[1].trim());
@@ -108,15 +103,24 @@ public class StaticVariables {
                 webPort = 5001;
             }break;
 
-            case "ftpPort": try {
-                ftpPort = Integer.parseInt(s[1].trim());
+            case "sftpPort": try {
+                sftpPort = Integer.parseInt(s[1].trim());
             } catch (NumberFormatException e) {
-                ftpPort = 5000;
+                sftpPort = 5002;
             }break;
 
             case "standardUserName": standardUserName = s[1].trim();break;
 
             case "standardUserPassword": standardUserPassword = s[1].trim();break;
+
+            case "logTerminalOutput": logTerminalOutput = Boolean.parseBoolean(s[1].trim());
+
+            case "maxLogFileSize":
+                try {
+                    maxLogFileSize = Integer.parseInt(s[1].trim());
+                } catch (NumberFormatException e) {
+                    maxLogFileSize = 512;
+                }
 
             default:
                 System.out.println("[INIT-INFO] - couldn't find " + s[0] + " in list | Value = " + s[1]);
@@ -124,20 +128,19 @@ public class StaticVariables {
     }
     public static void createStdFilesAndDirs() throws IOException {
         new File(logDefaultDir).mkdir();
-        new File(ftpDefaultDir).mkdir();
+        new File(sftpDefaultDir).mkdir();
         new File(mapsDefaultDir).mkdir();
 
         osmDir = mapsDefaultDir + "osm";
         mapDir = mapsDefaultDir + "map";
         ohdmDir = "";
 
-
-        ftpServiceMapDir = mapDir;
-        ftpServiceUserPropertiesFile = ftpDefaultDir + "userList.properties";
+        sftpServiceMapDir = mapDir;
+        sftpDefaultKeyFile = sftpDefaultDir + "hostKeySave.ser";
 
         new File(osmDir).mkdir();
         new File(mapDir).mkdir();
 
-        new File(ftpServiceUserPropertiesFile).createNewFile();
+        new File(sftpDefaultKeyFile).createNewFile();
     }
 }
