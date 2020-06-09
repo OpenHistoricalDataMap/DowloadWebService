@@ -1,8 +1,17 @@
+// '[init]' says this is an init file, 
+// just so it doesn't read an random file out of nothing
+// 
+// Standart config
+// 'variable' 'name' = 'value'
+// '//' Comment
+
 [init]
-logDefaultDir = ./log/
-mapsDefaultDir = ./maps/
-ftpDefaultDir = ./ftp/
+logDefaultDir = log/
+mapsDefaultDir = maps/
+sftpDefaultDir = sftp/
+
 webPort = 5001
-ftpPort = 5000
+sftpPort = 5002
+
 standardUserName = ohdmOffViewer
 standardUserPassword = H!3r0glyph Sat3llite Era$er
