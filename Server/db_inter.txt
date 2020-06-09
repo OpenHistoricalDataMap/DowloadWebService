@@ -1,7 +1,0 @@
-servername:127.0.0.1
-portnumber:***
-username:***
-pwd:***
-dbname:***
-schema:***
-maxThreads:5
