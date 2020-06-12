@@ -3,6 +3,7 @@ package Server.WebService;
 import Server.CustomObjects.LogType;
 import Server.CustomObjects.QueryRequest;
 import Server.LogService.Logger;
+import org.apache.juli.logging.Log;
 
 import java.util.ArrayList;
 
@@ -12,17 +13,27 @@ import static Server.CustomObjects.LogType.INFO;
 public class ServiceNew extends Thread implements srvInterface {
 
     private ArrayList<QueryRequest> BUFFER_LIST = new ArrayList<>();
+
     private ArrayList<QueryRequest> WORKER_LIST = new ArrayList<>();
     private ArrayList<QueryRequest> DONE_LIST = new ArrayList<>();
     private ArrayList<QueryRequest> ERROR_LIST = new ArrayList<>();
-
     private int maxInWorkerList = 5;
+
+    public ServiceNew(ArrayList<QueryRequest> BUFFER_LIST, int maxInWorkerList) {
+        this.BUFFER_LIST = BUFFER_LIST;
+        this.maxInWorkerList = maxInWorkerList;
+    }
+
+    public ServiceNew() {
+
+    }
 
     private boolean running = false;
     private boolean active = false;
     private boolean full = false;
 
     private String TAG = "WebService-Thread";
+    private boolean stop = false;
 
     public boolean isActive() {
         return active;
@@ -43,6 +54,14 @@ public class ServiceNew extends Thread implements srvInterface {
     public ArrayList<QueryRequest> getERROR_LIST() {
         cleanWorkerList();
         return ERROR_LIST;
+    }
+
+    public void stopThread() {
+        stop = true;
+        if (active || full)
+            interrupt();
+
+        interrupt();
     }
 
     /**
@@ -128,6 +147,9 @@ public class ServiceNew extends Thread implements srvInterface {
 
         try {
             while (true) {
+                if (stop) {
+                    return;
+                }
                 active = true;
                 full = false;
                 // runs through the WORKER_LIST and takes all "non-active" Status
@@ -160,9 +182,10 @@ public class ServiceNew extends Thread implements srvInterface {
                     }
                 }
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             Logger.instance.addLogEntry(LogType.ERROR, TAG,"Service Failed due to Exception thrown " + e.getMessage());
             running = false;
         }
+        Logger.instance.addLogEntry(INFO, TAG, "Service ended");
     }
 }

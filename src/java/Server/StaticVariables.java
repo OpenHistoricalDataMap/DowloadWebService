@@ -10,9 +10,10 @@ class StaticVariables {
 
     public static String defaultInitFile = "./init.txt";
     // ---------------------------- will be read from File ----------------------------//
-    public static String logDefaultDir = "./log/";
-    public static String mapsDefaultDir = "./maps/";
-    public static String sftpDefaultDir = "./sftp/";
+    public static String logDefaultDir = "log/";
+    public static String mapsDefaultDir = "maps/";
+    public static String sftpDefaultDir = "sftp/";
+    public static String msgPath = "msgs/";
 
     public static boolean logTerminalOutput = true;
     public static int maxLogFileSize = 512; // in kilobytes
@@ -20,6 +21,8 @@ class StaticVariables {
     public static int webPort = 5001;
     //public static int ftpPort = 5000;
     public static int sftpPort = 5002;
+
+    public static int coresToUse = 2;
 
     // default values !!!! ALWAYS CHANGE IN FILE !!!!
     public static String standardUserName = "";
@@ -33,6 +36,12 @@ class StaticVariables {
     public static String sftpServiceMapDir = mapDir;
     public static String sftpDefaultKeyFile = sftpDefaultDir + "hostKeySave.ser";
 
+    public static String renderingParameterFilePath = "db_rendering.txt";
+    public static String ohdmConverterFilePath = "OHDMConverter.jar";
+    public static String jdbcDriverFilePath = "postgresql-42.1.1.jar";
+
+    public static String javaJdkPath = "java";
+
     // -------------------------------------------------------------------------------//
 
     public static void init() throws IOException {
@@ -40,7 +49,7 @@ class StaticVariables {
          throw new IOException("couldn't find init.txt File in the execution directory !!!!");
 
          if (!new File(defaultInitFile).exists()) {
-            giveStandardValues();
+            //giveStandardValues();
             return;
         }
 
@@ -77,18 +86,6 @@ class StaticVariables {
         }
     }
 
-    private static void giveStandardValues() {
-
-        logDefaultDir = "log/";
-        mapsDefaultDir = "maps/";
-        sftpDefaultDir = "sftp/";
-
-        webPort = 5001;
-        sftpPort = 5002;
-
-        standardUserName = "ohdmOffViewer";
-        standardUserPassword = "H!3r0glyph Sat3llite Era$er";
-    }
     private static void assignValue(String[] s) {
         switch (s[0]) {
             case "logDefaultDir": logDefaultDir = s[1].trim(); break;
@@ -114,6 +111,20 @@ class StaticVariables {
             case "standardUserPassword": standardUserPassword = s[1].trim();break;
 
             case "logTerminalOutput": logTerminalOutput = Boolean.parseBoolean(s[1].trim());
+
+            case "renderingParameterFilePath": renderingParameterFilePath = s[1].trim(); break;
+
+            case "ohdmConverterFilePath" : ohdmConverterFilePath = s[1].trim(); break;
+
+            case "jdbcDriverFilePath" : jdbcDriverFilePath = s[1].trim(); break;
+
+            case "javaJdkPath" : javaJdkPath = s[1].trim(); break;
+
+            case "coresToUse" : try {
+                coresToUse = Integer.parseInt(s[1].trim());
+            } catch (NumberFormatException e) {
+                coresToUse = 2;
+            }break;
 
             case "maxLogFileSize":
                 try {

@@ -53,7 +53,7 @@ public interface FileServerClient<RemoteFile, RemoteDirectory> {
      * @return FTPFiles in current dir
      * @throws IOException couldn't read from current dir
      */
-    ArrayList<RemoteFile> getAllFileList(String path) throws IOException;
+    //ArrayList<RemoteFile> getAllFileList(String path) throws IOException;
 
     /**
      * call to download a File from current dir

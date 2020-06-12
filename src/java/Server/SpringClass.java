@@ -1,19 +1,25 @@
 package Server;
 
+import Server.ControllerEndpoint.ControllerEndpoint;
 import Server.CustomObjects.Coords;
+import Server.CustomObjects.LogEntry;
 import Server.CustomObjects.QueryRequest;
-import Server.FileService.FTPService.FTPService;
 import Server.LogService.Logger;
 import Server.FileService.SFTPService.SftpService;
 import Server.WebService.ServiceNew;
+import com.google.gson.Gson;
+import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static Server.CustomObjects.LogType.ERROR;
@@ -25,19 +31,25 @@ public class SpringClass {
 
     private static String initFile = "init.txt";
 
-    private static ServiceNew serviceInstance;
+    public static ServiceNew serviceInstance;
     private static Thread serviceThread;
 
     // depricated
     // private static FTPService ftpInstance;
     // private static Thread ftpThread;
 
-    private static SftpService sftpInstance;
+    public static SftpService sftpInstance;
     private static Thread sftpThread;
+
+    private static ApplicationContext cntxt;
 
     private String TAG = "Spring-Thread";
 
-    public static void main(String[] args) throws IOException {
+    /**
+     * setup for initial start and full restarts
+     * @throws IOException
+     */
+    private static void set_up() throws IOException {
         // just standard inits for the Variables used in this Project
         // most of them are read from the init.txt
         // but more of that in the OHDM wiki
@@ -65,14 +77,57 @@ public class SpringClass {
         ftpThread.start();*/
 
         // the sftp service, which allows the Android App to download the .map files
-        sftpInstance = new SftpService(StaticVariables.sftpPort, StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.sftpDefaultKeyFile, StaticVariables.sftpServiceMapDir);
+        sftpInstance = new SftpService(StaticVariables.sftpPort, StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.sftpDefaultKeyFile, StaticVariables.sftpServiceMapDir, StaticVariables.msgPath);
         sftpThread = new Thread(sftpInstance);
         sftpThread.start();
+    }
+
+    public static void main(String[] args) throws IOException {
+        set_up();
 
         // and here starts the Spring Application with the server port set to the
         // before given Port in Server.StaticVariables
         System.getProperties().put("server.port", StaticVariables.webPort);
-        SpringApplication.run(SpringClass.class, args);
+        cntxt = SpringApplication.run(SpringClass.class, args);
+
+        ControllerEndpoint ce = new ControllerEndpoint(StaticVariables.msgPath);
+        Thread ce_thread = new Thread(ce);
+        ce_thread.start();
+    }
+
+    public static String reloadWebService() throws IOException {
+        StaticVariables.init();
+        StaticVariables.createStdFilesAndDirs();
+        ArrayList<QueryRequest> bufferSave = serviceInstance.getBUFFER_LIST();
+        serviceInstance.stopThread();
+        serviceInstance = new ServiceNew(bufferSave, 5);
+        serviceThread = new Thread(serviceInstance);
+        serviceThread.start();
+        return "webservice reloaded | saved pending Requests in Buffer = " + bufferSave.size();
+    }
+
+    public static String reloadLog() throws IOException {
+        StaticVariables.init();
+        StaticVariables.createStdFilesAndDirs();
+        Logger.instance.stopThread();
+        List<LogEntry> bufferSave = Logger.instance.getBUFFER_LIST();
+        new Logger(StaticVariables.logDefaultDir, StaticVariables.maxLogFileSize, StaticVariables.logTerminalOutput);
+        Logger.instance.setBUFFER_LIST(bufferSave);
+        Logger.instance.start();
+        return "Logger reloaded | saved pending LogEntries in Buffer = " + bufferSave.size();
+    }
+
+    public static String restart() throws IOException {
+        SpringApplication.exit(cntxt, new ExitCodeGenerator() {
+            @Override
+            public int getExitCode() {
+                return 0;
+            }
+        });
+        set_up();
+        System.getProperties().put("server.port", StaticVariables.webPort);
+        cntxt = SpringApplication.run(SpringClass.class);
+        return "restarted service -  look into daemon-log to see init";
     }
 
     @RequestMapping("/")
@@ -80,9 +135,11 @@ public class SpringClass {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<head> <title> WebService status</title> </head>");
+
         sb.append("<p> Service Running = " + serviceInstance.isRunning() + "</p>");
         sb.append("<p> WatcherThread currently working = " + serviceInstance.isActive() + "</p>");
         sb.append("<p> sftp Service running = " + sftpInstance.isRunning + "</p>");
+
         sb.append("<p> current Buffer list length = " + serviceInstance.getBUFFER_LIST().size() + "</p>");
         sb.append("<p> current Worker list length = " + serviceInstance.getWORKER_LIST().size() + "</p>");
         sb.append("<p> current Error list length = " + serviceInstance.getERROR_LIST().size() + "</p>");
@@ -92,8 +149,9 @@ public class SpringClass {
         int i = 0;
         for (QueryRequest r: serviceInstance.getBUFFER_LIST()) {
             sb.append("<p> | ---------------------------------------------------------------------<br>");
+            sb.append(" | Request-ID : " + r.getRequestedByID() + "<br>");
             sb.append(" | Map Name :" + r.getMapName() +"<br>");
-            sb.append(" | ----------------------------------------------------------------------" +"<br>");
+            sb.append(" | ----------------------------------------------------------------------<br>");
             sb.append(" | - Position : " + i +"<br>");
             sb.append(" | - Date : " + r.getDate() +"<br>");
             sb.append(" | - Coords : <br>" + r.getPrintableCoordsString() +"<br>");
@@ -105,8 +163,9 @@ public class SpringClass {
         i = 0;
         for (QueryRequest r: serviceInstance.getWORKER_LIST()) {
             sb.append("<p> | ---------------------------------------------------------------------<br>");
+            sb.append(" | Request-ID : " + r.getRequestedByID() + "<br>");
             sb.append(" | Map Name : " + r.getMapName()  +"<br>");
-            sb.append(" | ----------------------------------------------------------------------" +"<br>");;
+            sb.append(" | ----------------------------------------------------------------------<br>");;
             sb.append(" | - Position : " + i  +"<br>");
             sb.append(" | - Date : " + r.getDate()  +"<br>");
             sb.append(" | - Coords : <br>" + r.getPrintableCoordsString()  +"<br>");
@@ -118,7 +177,8 @@ public class SpringClass {
         sb.append("<h3> ERROR LIST:</h3>");
         i = 0;
         for (QueryRequest r: serviceInstance.getERROR_LIST()) {
-            sb.append("<p> | ---------------------------------------------------------------------" + "<br>");
+            sb.append("<p> | ---------------------------------------------------------------------<br>");
+            sb.append(" | - Request-ID : " + r.getRequestedByID() + "<br>");
             sb.append(" | - ErrorMessage : " + r.getErrorMessage()  +"<br>");
             sb.append(" | - Date : " + r.getDate()  +"<br>");
             sb.append(" | - Coords : <br>" + r.getPrintableCoordsString()  +"<br>");
@@ -130,11 +190,12 @@ public class SpringClass {
         i = 0;
         for (QueryRequest r: serviceInstance.getDONE_LIST()) {
             sb.append("<p> | ---------------------------------------------------------------------<br>");
+            sb.append(" | Request-ID : " + r.getRequestedByID() + "<br>");
             sb.append(" | Map Name : " + r.getMapName() + "<br>");
-            sb.append(" | ----------------------------------------------------------------------" +"<br>");
+            sb.append(" | ----------------------------------------------------------------------<br>");
             sb.append(" | - Date : " + r.getDate() + "<br>");
             sb.append(" | - Coords : \n" + r.getPrintableCoordsString() + "<br>");
-            sb.append(" | - Link to download .map file : <a href=\"sftp:"+ StaticVariables.standardUserName + ":" + StaticVariables.standardUserPassword + "@141.45.146.200:5002/" + r.getMapName()+ ".map\">direct link</a> <br>");
+            // sb.append(" | - Link to download .map file : <a href=\"sftp:"+ StaticVariables.standardUserName + ":" + StaticVariables.standardUserPassword + "@141.45.146.200:5002/" + r.getMapName()+ ".map\">direct link</a> <br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
         }
@@ -143,9 +204,10 @@ public class SpringClass {
     }
 
     @RequestMapping(value = "/request")
+    //10.12345 45.3132, 10.9 55.34534535, 15.4646456 55, 15 44.3535365, 10.12345 45.3132
     public String request(@RequestParam(value = "name", defaultValue = "testRequest") String mapname,
                           @RequestParam(value = "coords", defaultValue = "10,45_10,55_15,55_15,45_10,45") String coords,
-                          @RequestParam(value = "date", defaultValue = "1500-12-11") String date) {
+                          @RequestParam(value = "date", defaultValue = "2016-12-31") String date) {
 
         List<Coords> coordinates = new ArrayList<>();
         QueryRequest q = null;
@@ -165,7 +227,7 @@ public class SpringClass {
             }
 
             // TODO : add id system
-            q = new QueryRequest(coordinates, date, mapname,0000, StaticVariables.osmDir, StaticVariables.mapDir);
+            q = new QueryRequest(coordinates, date, mapname, (int) CustomPRNG.random(), StaticVariables.osmDir, StaticVariables.mapDir, StaticVariables.renderingParameterFilePath, StaticVariables.ohdmConverterFilePath, StaticVariables.javaJdkPath, StaticVariables.jdbcDriverFilePath);
 
             Logger.instance.addLogEntry(INFO, TAG,"given Data: " + mapname + " | Date: " + date + " | coords: \n" + q.getPrintableCoordsString());
 
@@ -193,7 +255,7 @@ public class SpringClass {
             serviceInstance.add(q);
 
             //TODO: add id system
-            return "Map " + q.getMapName() + ".map with data from " + q.getDate() + " will be created. Check back later!\n";
+            return String.valueOf(q.getRequestedByID());
 
             //except ValueError as e:
             //# abort(400)
@@ -220,7 +282,7 @@ public class SpringClass {
             }
         } else {
             try {
-                br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(Logger.instance.currentWritingFile))));
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(Logger.instance.currentWritingFile)));
             } catch (FileNotFoundException e) {
                 return "couldn't read logger | " + Logger.instance.currentWritingFile;
             }
@@ -235,6 +297,17 @@ public class SpringClass {
         }
 
         return output;
+    }
+
+    @RequestMapping("/workingStatus")
+    public String workingStatis(@RequestParam(value = "id", defaultValue = "") String id) {
+        if (id.equals(""))
+            return "gives back everything with status";
+        else {
+            //String[][] outputArray = getInformations(id);
+            //return new Gson().toJson(outputArray);
+            return "gives back specific status things with id " + id;
+        }
     }
 
     /**
@@ -269,6 +342,7 @@ public class SpringClass {
 
         return cleanName.toString().trim();
     }
+
     /**
      * checks if the map already exists ( is searching in std. OSM_DIR and MAP_DIR )
      *

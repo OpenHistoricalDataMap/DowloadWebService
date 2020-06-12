@@ -11,7 +11,7 @@ import java.util.List;
 public class SftpClient implements FileServerClient<RemoteFile, RemoteDirectory> {
 
     private Session session;
-    private ChannelSftp channel;
+    public ChannelSftp channel;
 
     private String output;
     private String[] usableOutput;
@@ -29,7 +29,6 @@ public class SftpClient implements FileServerClient<RemoteFile, RemoteDirectory>
     }
 
 
-    @Override
     public int connect() {
         // just checks if the session isn't already established
         if (!(session == null))
@@ -61,12 +60,10 @@ public class SftpClient implements FileServerClient<RemoteFile, RemoteDirectory>
         return 0;
     }
 
-    @Override
     public boolean isConnected() {
         return session.isConnected() && channel.isConnected();
     }
 
-    @Override
     public void closeConnection() {
         if (session == null || channel == null)
             return;
@@ -138,7 +135,6 @@ public class SftpClient implements FileServerClient<RemoteFile, RemoteDirectory>
         return date;
     }
 
-    @Override
     public RemoteDirectory[] getDirList(String path) throws IOException {
         try {
             updateOutput(path);
@@ -176,8 +172,6 @@ public class SftpClient implements FileServerClient<RemoteFile, RemoteDirectory>
         return remoteDirectories.toArray(new RemoteDirectory[remoteDirectories.size()]);
     }
 
-    // path = "/"
-    @Override
     public RemoteFile[] getFileList(String path) throws IOException {
         try {
             updateOutput(path);
@@ -214,19 +208,7 @@ public class SftpClient implements FileServerClient<RemoteFile, RemoteDirectory>
         return remoteFiles.toArray(new RemoteFile[remoteFiles.size()]);
     }
 
-
-    @Override
-    public ArrayList getAllFileList(String path) throws IOException {
-        if (!session.isConnected())
-        {
-            //Log.e(TAG, "getAllFileList : wasnt connected to server, call connect() first");
-            return null;
-        }
-        return null;
-    }
-
-    @Override
-    public boolean downloadFile(String remoteFileName, String downloadPath) throws IOException {
+    public boolean downloadFile(String remoteFileName, String downloadPath) {
         try {
             channel.get(remoteFileName, downloadPath);
         } catch (SftpException e) {

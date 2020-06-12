@@ -1,5 +1,6 @@
 package Server.LogService;
 
+import Server.CustomObjects.LogEntry;
 import Server.CustomObjects.LogType;
 
 import java.io.*;
@@ -14,7 +15,7 @@ public class Logger extends Thread implements LoggerInt {
 
     private String baseFile;
     private String currentWritingDir;
-    public String currentWritingFile;
+    public File currentWritingFile;
 
     private List<LogEntry> BUFFER_LIST = new ArrayList<>();
 
@@ -45,10 +46,18 @@ public class Logger extends Thread implements LoggerInt {
         if (!new File(currentWritingDir).exists())
             new File(currentWritingDir).mkdir();
 
-        this.currentWritingFile = currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(date) +"].txt";
+        this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(date) +"].txt");
 
         if (instance == null)
             instance = this;
+    }
+
+    public List<LogEntry> getBUFFER_LIST() {
+        return BUFFER_LIST;
+    }
+
+    public void setBUFFER_LIST(List<LogEntry> BUFFER_LIST) {
+        this.BUFFER_LIST = BUFFER_LIST;
     }
 
     public void addLogEntry(LogType type, String TAG, String message) {
@@ -58,13 +67,11 @@ public class Logger extends Thread implements LoggerInt {
     }
 
     private void swapToNextFileIfNecessary() throws IOException {
-        if (new File(currentWritingFile).length() / 1000 > maxLogFileSize) {
-            currentWritingFile = baseFile.replace(".txt", "")+ "[" + fileFormatter.format(System.currentTimeMillis()) + "].txt";
+        if (currentWritingFile.length() / 1000 > maxLogFileSize) {
+            this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(System.currentTimeMillis()) +"].txt");
 
-            File file = new File(currentWritingFile);
-
-            if (!file.exists())
-                file.createNewFile();
+            if (!currentWritingFile.exists())
+                currentWritingFile.createNewFile();
         }
     }
 
@@ -79,23 +86,25 @@ public class Logger extends Thread implements LoggerInt {
 
             currentWritingDir = "./" + nwd.getName();
 
-            currentWritingFile = currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(System.currentTimeMillis()) +"].txt";;
+            this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(System.currentTimeMillis()) +"].txt");
 
-            File file = new File(currentWritingFile);
-
-            if (!file.exists())
-                file.createNewFile();
+            if (!currentWritingFile.exists())
+                currentWritingFile.createNewFile();
 
             newDirCreated = true;
         }
     }
 
+    public void stopThread() {
+
+    }
+
     @Override
     public synchronized void run() {
         isRunning = true;
-        if (!new File(currentWritingFile).exists()) {
+        if (!currentWritingFile.exists()) {
             try {
-                new File(currentWritingFile).createNewFile();
+                currentWritingFile.createNewFile();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -129,10 +138,9 @@ public class Logger extends Thread implements LoggerInt {
 
     private void writeEntry(LogEntry entry) throws IOException {
         String temp = "";
-        File file = new File(currentWritingFile);
 
-        if (!file.exists())
-            file.createNewFile();
+        if (!currentWritingFile.exists())
+            currentWritingFile.createNewFile();
 
         Date date = new Date(System.currentTimeMillis());
         String input = entry.type + " | " + logFormatter.format(date) + " | " + entry.TAG + " : " + entry.message;
@@ -140,7 +148,7 @@ public class Logger extends Thread implements LoggerInt {
         if (logTerminalOutput)
             System.out.println(input);
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(currentWritingFile)));
 
         while(br.ready()) {
             temp += br.readLine() + "\n";
@@ -149,20 +157,8 @@ public class Logger extends Thread implements LoggerInt {
         temp += input + "\n";
         br.close();
 
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(currentWritingFile)));
         bw.write(temp);
         bw.close();
-    }
-    private class LogEntry {
-
-        LogType type;
-        String TAG;
-        String message;
-
-        public LogEntry(LogType type, String TAG, String message) {
-            this.type = type;
-            this.TAG = TAG;
-            this.message = message;
-        }
     }
 }

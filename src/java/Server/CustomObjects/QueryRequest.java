@@ -21,9 +21,23 @@ public class QueryRequest extends Thread {
     private String osmDir;
     private String mapDir;
 
-    public QueryRequest(List<Coords> coordinates, String date, String mapName, int id, String osmDir, String mapDir) {
+    private String renderingParameter;
+    private String ohdmConverter;
+
+    private String javaJdkPath;
+    private String jdbcDriverPath;
+
+    private long startTime = System.currentTimeMillis();
+
+    public QueryRequest(List<Coords> coordinates, String date, String mapName, int id, String osmDir, String mapDir, String renderingParameter, String ohdmConverter, String javaJdkPath, String jdbcDriverPath) {
         this.osmDir = osmDir;
         this.mapDir = mapDir;
+
+        this.renderingParameter = renderingParameter;
+        this.ohdmConverter = ohdmConverter;
+
+        this.javaJdkPath = javaJdkPath;
+        this.jdbcDriverPath = jdbcDriverPath;
 
         this.coordinates = coordinates;
         this.date = date;
@@ -64,6 +78,10 @@ public class QueryRequest extends Thread {
         return errorMessage;
     }
 
+    public long getStartTime() {
+        return startTime;
+    }
+
     /**
      * calls a script to convert an .osm to a .map file.
      *
@@ -95,20 +113,20 @@ public class QueryRequest extends Thread {
      *
      * @return 0 on success, anything else on failure.
      */
-    private CommandReturn download_map() throws Exception {
-        String[] template = new String[]{"java", "-jar", "OHDMConverter.jar", "-o", osmDir + "/" + mapName + ".osm", "-r", "db_rendering.txt", "-p", rearrangeCoordsForScript(getCoordinates()), "-t", date};
+    private CommandReturn download_map() {
+        String[] template = new String[]{javaJdkPath, "-classpath", jdbcDriverPath, "-jar", ohdmConverter, "-o", osmDir + "/" + mapName + ".osm", "-r", renderingParameter, "-p", rearrangeCoordsForScript(getCoordinates()), "-t", date};
 
         String tmpl = "";
-        for (String s:
-             template) {
+        for (String s :
+                template) {
             tmpl += s + " ";
         }
 
-        Logger.instance.addLogEntry(LogType.INFO, TAG,"running: " + tmpl);
+        Logger.instance.addLogEntry(LogType.INFO, TAG, "running: " + tmpl);
 
         CommandReturn result;
-        result = excCommand(template);
 
+        result = excCommand(template);
         return result;
     }
 

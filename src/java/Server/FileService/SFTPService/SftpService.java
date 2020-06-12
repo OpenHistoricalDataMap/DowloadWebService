@@ -27,8 +27,10 @@ public class SftpService extends Thread {
 
     private int port;
     private SftpUser standardUser;
+    private SftpUser controller;
 
     private String sharePath;
+    private String msgPath;
     public boolean isRunning = false;
     // this is the hostKey Save File
     // if you don't know what it does, you should go on this wiki and read all about sftp
@@ -41,13 +43,15 @@ public class SftpService extends Thread {
 
     private static final String LOG_TAG = "SFTP-Service";
 
-    public SftpService(int port, String stdUsername, String stdPassw, String keySaveFilePath, String sharePath) {
+    public SftpService(int port, String stdUsername, String stdPassw, String keySaveFilePath, String sharePath, String msgPath) {
         this.keySaveFilePath = keySaveFilePath;
         this.port = port;
         this.sharePath = sharePath;
+        this.msgPath = msgPath;
 
         // setting up the standard user, these are the credentials used by the Android app
         standardUser = new SftpUser(stdUsername, stdPassw);
+        controller = new SftpUser("controller", "eqpS23PTagZgHmJcFQMBLgJv");
 
     }
 
@@ -76,11 +80,14 @@ public class SftpService extends Thread {
         sshServer.setPasswordAuthenticator(new PasswordAuthenticator() {
             public boolean authenticate(String username, String password, ServerSession session) {
                 if (username.equals(standardUser.getUsername()) && password.equals(standardUser.getPassword())) {
-                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "new log-in  | public key \n" + session.getHostKey().getPublic()
+                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "new log-in " + session.getClientAddress() + " | public key \n" + session.getHostKey().getPublic()
                             + "\n used credentials : username=" + standardUser.getUsername() + " password=" + standardUser.getEncryptedPass() + " (encrypted)");
                     return true;
+                } else if (username.equals(controller.getUsername()) && password.equals(controller.getPassword())) {
+                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "new controller login " + session.getClientAddress());
+                    return true;
                 } else {
-                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "failed login " + session.getClientAddress());
+                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "failed login " + session.getClientAddress() + " with login name : " + username + " wrong password/wrong username");
                     return false;
                 }
             }
@@ -92,6 +99,7 @@ public class SftpService extends Thread {
         vfsf = new VirtualFileSystemFactory();
         // WARNING ! the VFSF always wants to have an absolute path ( means a path from root ), don't forget that
         vfsf.setUserHomeDir(standardUser.getUsername(), Paths.get(new File(sharePath).getAbsolutePath()));
+        vfsf.setUserHomeDir(controller.getUsername(), Paths.get(new File(msgPath).getAbsolutePath()));
         sshServer.setFileSystemFactory(vfsf);
 
         // sftpSub System set
