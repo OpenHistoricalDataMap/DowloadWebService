@@ -26,6 +26,8 @@ public class Logger extends Thread implements LoggerInt {
     private Boolean isWaiting = false;
     public boolean isRunning = false;
 
+    public boolean stop = false;
+
     private boolean newDirCreated = false;
 
     private String logDefaultDir;
@@ -96,7 +98,8 @@ public class Logger extends Thread implements LoggerInt {
     }
 
     public void stopThread() {
-
+        stop = true;
+            interrupt();
     }
 
     @Override
@@ -123,7 +126,11 @@ public class Logger extends Thread implements LoggerInt {
             }
             if (BUFFER_LIST.isEmpty()) {
                 isWaiting = true;
-                try { wait(); } catch (InterruptedException e) { /*kindly ignore*/ }
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    // kindly ignore
+                }
                 isWaiting = false;
             } else {
                 try {
@@ -133,6 +140,9 @@ public class Logger extends Thread implements LoggerInt {
                 }
                 BUFFER_LIST.remove(0);
             }
+
+            if (stop)
+                return;
         }
     }
 

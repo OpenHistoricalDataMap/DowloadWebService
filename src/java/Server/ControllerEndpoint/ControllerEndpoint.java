@@ -7,9 +7,12 @@ import Server.SpringClass;
 import java.io.*;
 import java.text.SimpleDateFormat;
 
+import static Server.CustomObjects.LogType.INFO;
+
 public class ControllerEndpoint extends Thread {
 
     private String msgPath;
+    private String LOG_TAG = "ControllerAccessEndpoint";
 
     public ControllerEndpoint(String msgPath) {
         this.msgPath = msgPath;
@@ -53,6 +56,7 @@ public class ControllerEndpoint extends Thread {
 
         String value = br.readLine();
         br.close();
+        Logger.instance.addLogEntry(INFO, LOG_TAG, "read new request | ID : " + id + " | Request : " + value);
         return new ControllerRequest(id, value);
     }
 
@@ -60,6 +64,7 @@ public class ControllerEndpoint extends Thread {
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
         bw.write(r.returnValue);
         bw.flush();
+        Logger.instance.addLogEntry(INFO, LOG_TAG, "response send : " + r.returnValue + " | \nID: " + r.id);
         return bw;
     }
 
@@ -70,9 +75,9 @@ public class ControllerEndpoint extends Thread {
             case "help" :
                 answer += "currently implemented : " + "\n";
                 answer += " status - giving back the status the service is currently in \n";
-                answer += " log - gives back the current log entries\n";
-                answer += " daemonLog - gives back the daemon log entries\n";
-                answer += " reload webservice - restarts the service with new read init values (all buffered requests will be saved)\n";
+                answer += " current log - gives back the current log entries\n";
+                answer += " daemon log - gives back the daemon log entries\n";
+                answer += " reload requestService - restarts the service with new read init values (all buffered requests will be saved)\n";
                 answer += " reload log - restarts log with new read init values\n";
                 answer += " restart -  restarts the whole Service with new read init values\n";
                 return answer;
@@ -103,18 +108,21 @@ public class ControllerEndpoint extends Thread {
                 return answer;
 
             case "daemon log" :
-                File daemonLogFile = new File("daemonLog.log");
+                File daemonLogFile = new File("daemonLog.txt");
                 br = new BufferedReader(new InputStreamReader(new FileInputStream(daemonLogFile)));
                 while (br.ready())
                     answer += br.readLine() + "\n";
 
                 return answer;
 
-            case "reload webservice":
-                return SpringClass.reloadWebService();
+            case "reload requestService":
+                return SpringClass.reloadRequestService();
 
             case "reload log":
                 return SpringClass.reloadLog();
+
+            case "reload id":
+                return SpringClass.reloadID();
 
             case "restart":
                 return SpringClass.restart();
@@ -149,25 +157,34 @@ public class ControllerEndpoint extends Thread {
             File f = null;
             try {
                 f = fetchNewFile();
-                System.out.println("new File found");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
+            ControllerRequest request = null;
             try {
-                ControllerRequest request = readContent(f);
-
-                assert request != null;
-                    request.setReturnValue(processRequest(request.value));
-
-                f.delete();
-
-                File returnFile = new File(msgPath + request.id + ".ans");
-                writeResponse(returnFile, request).close();
+                request = readContent(f);
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            assert request != null;
+
+            try {
+                request.setReturnValue(processRequest(request.value));
+            } catch (IOException e) {
+                request.setReturnValue(e.getMessage());
+            }
+
+            f.delete();
+
+            File returnFile = new File(msgPath + request.id + ".ans");
+            try {
+                writeResponse(returnFile, request).close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 }

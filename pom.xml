@@ -12,7 +12,7 @@
 
 	<groupId>ohdm</groupId>
 	<artifactId>runner</artifactId>
-	<version>0.9.2-SNAPSHOT</version>
+	<version>0.9.9-SNAPSHOT</version>
 	<name>runner</name>
 	<description>mapDownloadService for Android App</description>
 	<!-- lookup parent from repository -->

@@ -4,11 +4,10 @@ import Server.ControllerEndpoint.ControllerEndpoint;
 import Server.CustomObjects.Coords;
 import Server.CustomObjects.LogEntry;
 import Server.CustomObjects.QueryRequest;
+import Server.IDService.IDSystem;
 import Server.LogService.Logger;
 import Server.FileService.SFTPService.SftpService;
-import Server.WebService.ServiceNew;
-import com.google.gson.Gson;
-import org.springframework.boot.ExitCodeGenerator;
+import Server.RequestService.RequestService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -16,14 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import static Server.CustomObjects.LogType.ERROR;
-import static Server.CustomObjects.LogType.INFO;
+import static Server.CustomObjects.LogType.*;
 
 @SpringBootApplication
 @RestController
@@ -31,7 +27,7 @@ public class SpringClass {
 
     private static String initFile = "init.txt";
 
-    public static ServiceNew serviceInstance;
+    public static RequestService serviceInstance;
     private static Thread serviceThread;
 
     // depricated
@@ -43,7 +39,7 @@ public class SpringClass {
 
     private static ApplicationContext cntxt;
 
-    private String TAG = "Spring-Thread";
+    private static String TAG = "Spring-Thread";
 
     /**
      * setup for initial start and full restarts
@@ -63,15 +59,22 @@ public class SpringClass {
         new Logger(StaticVariables.logDefaultDir, StaticVariables.maxLogFileSize, StaticVariables.logTerminalOutput);
         Logger.instance.start();
 
+        /*------------------ new Services and Systems need to be established after the Logger!!!!! -------------------*/
+
+        // set up for ID System
+        // this isn't really a System of some sort, it just saves, reads and creates IDs
+        // everything in it is static and it's no Thread/Runnable
+        IDSystem.setIDSaveFile(new File(StaticVariables.idSavePath + "idSave.txt"));
+
         // the service instance, which just goes through a couple of lists and sets things to what they are
         // you could actually call it an "Controller" of some sorts... but I didn't bother changing the name
         // TODO: maybe later
-        serviceInstance = new ServiceNew();
-        serviceThread = new Thread(serviceInstance);
+        serviceInstance = new RequestService();
+        serviceThread = serviceInstance;
         serviceThread.start();
 
         // the ftp service, which allows the Android App to download the .map files
-        // depricated
+        // !! deprecated !!
         /*ftpInstance = new FTPService(StaticVariables.ftpPort, StaticVariables.ftpServiceUserPropertiesFile,  StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.ftpServiceMapDir, StaticVariables.ftpDefaultDir);
         ftpThread = new Thread(ftpInstance);
         ftpThread.start();*/
@@ -95,13 +98,21 @@ public class SpringClass {
         ce_thread.start();
     }
 
-    public static String reloadWebService() throws IOException {
+    public static String reloadRequestService() throws IOException {
         StaticVariables.init();
         StaticVariables.createStdFilesAndDirs();
         ArrayList<QueryRequest> bufferSave = serviceInstance.getBUFFER_LIST();
         serviceInstance.stopThread();
-        serviceInstance = new ServiceNew(bufferSave, 5);
-        serviceThread = new Thread(serviceInstance);
+        try {
+            serviceThread.join();
+        } catch (InterruptedException e) {
+            return "request service restart interrupted, please try again";
+        }
+        serviceThread = null;
+        serviceInstance = null;
+
+        serviceInstance = new RequestService(bufferSave, 5);
+        serviceThread = serviceInstance;
         serviceThread.start();
         return "webservice reloaded | saved pending Requests in Buffer = " + bufferSave.size();
     }
@@ -110,24 +121,40 @@ public class SpringClass {
         StaticVariables.init();
         StaticVariables.createStdFilesAndDirs();
         Logger.instance.stopThread();
+        try {
+            Logger.instance.join();
+        } catch (InterruptedException e) {
+            return "logger restart interrupted, please try again";
+        }
         List<LogEntry> bufferSave = Logger.instance.getBUFFER_LIST();
+        Logger.instance = null;
         new Logger(StaticVariables.logDefaultDir, StaticVariables.maxLogFileSize, StaticVariables.logTerminalOutput);
         Logger.instance.setBUFFER_LIST(bufferSave);
         Logger.instance.start();
+
         return "Logger reloaded | saved pending LogEntries in Buffer = " + bufferSave.size();
     }
 
     public static String restart() throws IOException {
-        SpringApplication.exit(cntxt, new ExitCodeGenerator() {
-            @Override
-            public int getExitCode() {
-                return 0;
-            }
-        });
-        set_up();
+        String _return = "";
+        _return += reloadLog() + "\n";
+        Logger.instance.addLogEntry(DEBUG, TAG, "restarted Logger");
+        _return += reloadID() + "\n";
+        Logger.instance.addLogEntry(DEBUG, TAG, "restarted ID System");
+        _return += reloadRequestService() + "\n";
+        Logger.instance.addLogEntry(DEBUG, TAG, "restarted webService");
+        SpringApplication.exit(cntxt, () -> 0);
+
         System.getProperties().put("server.port", StaticVariables.webPort);
         cntxt = SpringApplication.run(SpringClass.class);
-        return "restarted service -  look into daemon-log to see init";
+        return _return + "\nrestarted service -  look into daemon-log to see init";
+    }
+
+    public static String reloadID() throws IOException {
+        StaticVariables.init();
+        StaticVariables.createStdFilesAndDirs();
+        IDSystem.setIDSaveFile(new File(StaticVariables.idSavePath + "idSave.txt"));
+        return "loaded new ID File";
     }
 
     @RequestMapping("/")
@@ -207,7 +234,8 @@ public class SpringClass {
     //10.12345 45.3132, 10.9 55.34534535, 15.4646456 55, 15 44.3535365, 10.12345 45.3132
     public String request(@RequestParam(value = "name", defaultValue = "testRequest") String mapname,
                           @RequestParam(value = "coords", defaultValue = "10,45_10,55_15,55_15,45_10,45") String coords,
-                          @RequestParam(value = "date", defaultValue = "2016-12-31") String date) {
+                          @RequestParam(value = "date", defaultValue = "2016-12-31") String date,
+                          @RequestParam(value = "id", defaultValue = "") String id) {
 
         List<Coords> coordinates = new ArrayList<>();
         QueryRequest q = null;
@@ -227,7 +255,7 @@ public class SpringClass {
             }
 
             // TODO : add id system
-            q = new QueryRequest(coordinates, date, mapname, (int) CustomPRNG.random(), StaticVariables.osmDir, StaticVariables.mapDir, StaticVariables.renderingParameterFilePath, StaticVariables.ohdmConverterFilePath, StaticVariables.javaJdkPath, StaticVariables.jdbcDriverFilePath);
+            q = new QueryRequest(coordinates, date, mapname, id, StaticVariables.osmDir, StaticVariables.mapDir, StaticVariables.renderingParameterFilePath, StaticVariables.ohdmConverterFilePath, StaticVariables.javaJdkPath, StaticVariables.jdbcDriverFilePath);
 
             Logger.instance.addLogEntry(INFO, TAG,"given Data: " + mapname + " | Date: " + date + " | coords: \n" + q.getPrintableCoordsString());
 
@@ -254,7 +282,7 @@ public class SpringClass {
 
             serviceInstance.add(q);
 
-            //TODO: add id system
+            // TODO: add request id reference for instant status review
             return String.valueOf(q.getRequestedByID());
 
             //except ValueError as e:
@@ -308,6 +336,16 @@ public class SpringClass {
             //return new Gson().toJson(outputArray);
             return "gives back specific status things with id " + id;
         }
+    }
+
+    @RequestMapping("/id")
+    public String id() {
+        try {
+            return IDSystem.createNewID();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "couldn't create new ID";
     }
 
     /**

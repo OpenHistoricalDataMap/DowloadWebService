@@ -10,7 +10,7 @@ public class QueryRequest extends Thread {
     private List<Coords> coordinates;
     private String date;
     private String mapName;
-    private int requestedByID;
+    private String requestedByID;
 
     private QueryRequestStatus status = QueryRequestStatus.REQUESTED;
 
@@ -29,7 +29,7 @@ public class QueryRequest extends Thread {
 
     private long startTime = System.currentTimeMillis();
 
-    public QueryRequest(List<Coords> coordinates, String date, String mapName, int id, String osmDir, String mapDir, String renderingParameter, String ohdmConverter, String javaJdkPath, String jdbcDriverPath) {
+    public QueryRequest(List<Coords> coordinates, String date, String mapName, String id, String osmDir, String mapDir, String renderingParameter, String ohdmConverter, String javaJdkPath, String jdbcDriverPath) {
         this.osmDir = osmDir;
         this.mapDir = mapDir;
 
@@ -71,7 +71,7 @@ public class QueryRequest extends Thread {
         return status;
     }
 
-    public int getRequestedByID() {
+    public String getRequestedByID() {
         return requestedByID;
     }
     public String getErrorMessage() {

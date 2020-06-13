@@ -8,12 +8,14 @@ class StaticVariables {
         StaticVariables.defaultInitFile = defaultInitFile;
     }
 
+
     public static String defaultInitFile = "./init.txt";
     // ---------------------------- will be read from File ----------------------------//
     public static String logDefaultDir = "log/";
     public static String mapsDefaultDir = "maps/";
     public static String sftpDefaultDir = "sftp/";
     public static String msgPath = "msgs/";
+    public static String idSavePath = "ids/";
 
     public static boolean logTerminalOutput = true;
     public static int maxLogFileSize = 512; // in kilobytes
@@ -21,8 +23,6 @@ class StaticVariables {
     public static int webPort = 5001;
     //public static int ftpPort = 5000;
     public static int sftpPort = 5002;
-
-    public static int coresToUse = 2;
 
     // default values !!!! ALWAYS CHANGE IN FILE !!!!
     public static String standardUserName = "";
@@ -120,11 +120,9 @@ class StaticVariables {
 
             case "javaJdkPath" : javaJdkPath = s[1].trim(); break;
 
-            case "coresToUse" : try {
-                coresToUse = Integer.parseInt(s[1].trim());
-            } catch (NumberFormatException e) {
-                coresToUse = 2;
-            }break;
+            case "msgPath" : msgPath = s[1].trim(); break;
+
+            case "idSavePath" : idSavePath = s[1].trim(); break;
 
             case "maxLogFileSize":
                 try {
