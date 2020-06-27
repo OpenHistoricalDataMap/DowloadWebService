@@ -1,4 +1,4 @@
-# DowloadWebService
+# DownloadWebService
 OHDM Server with map download service for Andropid App
 Wiki : https://github.com/OpenHistoricalDataMap/DowloadWebService/wiki
 
