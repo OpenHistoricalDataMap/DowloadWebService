@@ -4,18 +4,22 @@ import Server.ControllerEndpoint.ControllerEndpoint;
 import Server.CustomObjects.Coords;
 import Server.CustomObjects.LogEntry;
 import Server.CustomObjects.QueryRequest;
+import Server.FileService.SFTPService.SftpService;
 import Server.IDService.IDSystem;
 import Server.LogService.Logger;
-import Server.FileService.SFTPService.SftpService;
 import Server.RequestService.RequestService;
+import com.google.gson.Gson;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +29,7 @@ import static Server.CustomObjects.LogType.*;
 @RestController
 public class SpringClass {
 
-    private static String initFile = "init.txt";
+    private static final String initFile = "init.txt";
 
     public static RequestService serviceInstance;
     private static Thread serviceThread;
@@ -35,15 +39,17 @@ public class SpringClass {
     // private static Thread ftpThread;
 
     public static SftpService sftpInstance;
-    private static Thread sftpThread;
+    public static Thread sftpThread;
 
     private static ApplicationContext cntxt;
 
-    private static String TAG = "Spring-Thread";
+    private static final String TAG = "Spring-Thread";
+
+    private static SpringClass instance;
 
     /**
      * setup for initial start and full restarts
-     * @throws IOException
+     * @throws IOException IOException
      */
     private static void set_up() throws IOException {
         // just standard inits for the Variables used in this Project
@@ -66,7 +72,7 @@ public class SpringClass {
         // everything in it is static and it's no Thread/Runnable
         IDSystem.setIDSaveFile(new File(StaticVariables.idSavePath + "idSave.txt"));
 
-        // the service instance, which just goes through a couple of lists and sets things to what they are
+        // the service instance, the Controller for all the Requests, is in charge of activating and managing requests
         // you could actually call it an "Controller" of some sorts... but I didn't bother changing the name
         // TODO: maybe later
         serviceInstance = new RequestService();
@@ -81,7 +87,7 @@ public class SpringClass {
 
         // the sftp service, which allows the Android App to download the .map files
         sftpInstance = new SftpService(StaticVariables.sftpPort, StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.sftpDefaultKeyFile, StaticVariables.sftpServiceMapDir, StaticVariables.msgPath);
-        sftpThread = new Thread(sftpInstance);
+        sftpThread = sftpInstance;
         sftpThread.start();
     }
 
@@ -157,8 +163,22 @@ public class SpringClass {
         return "loaded new ID File";
     }
 
+    public static String clearBuffer() {
+        return serviceInstance.resetBuffer();
+    }
+
+    public static String cleanDone() {
+        return serviceInstance.resetDone();
+    }
+
+    public static String cleanError() {
+        return serviceInstance.resetError();
+    }
+
     @RequestMapping("/")
-    public String webServiceStatus() {
+    public static String webServiceStatus() {
+
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' HH'h'-mm'm'-ss's'");
 
         StringBuilder sb = new StringBuilder();
         sb.append("<head> <title> WebService status</title> </head>");
@@ -181,7 +201,8 @@ public class SpringClass {
             sb.append(" | ----------------------------------------------------------------------<br>");
             sb.append(" | - Position : " + i +"<br>");
             sb.append(" | - Date : " + r.getDate() +"<br>");
-            sb.append(" | - Coords : <br>" + r.getPrintableCoordsString() +"<br>");
+            sb.append(" | - Coords : " + r.getPrintableCoordsString() +"<br>");
+            sb.append(" | - Request Time : " + r.getRequestTime() + "<br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
         }
@@ -195,8 +216,9 @@ public class SpringClass {
             sb.append(" | ----------------------------------------------------------------------<br>");;
             sb.append(" | - Position : " + i  +"<br>");
             sb.append(" | - Date : " + r.getDate()  +"<br>");
-            sb.append(" | - Coords : <br>" + r.getPrintableCoordsString()  +"<br>");
+            sb.append(" | - Coords : " + r.getPrintableCoordsString()  +"<br>");
             sb.append(" | - Status : " + r.getStatus().toString()  +"<br>");
+            sb.append(" | - Time passed since start " + StaticVariables.formatDateTimeDif(r.getRuntimeStart(), LocalDateTime.now()) + "<br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
         }
@@ -208,7 +230,9 @@ public class SpringClass {
             sb.append(" | - Request-ID : " + r.getRequestedByID() + "<br>");
             sb.append(" | - ErrorMessage : " + r.getErrorMessage()  +"<br>");
             sb.append(" | - Date : " + r.getDate()  +"<br>");
-            sb.append(" | - Coords : <br>" + r.getPrintableCoordsString()  +"<br>");
+            sb.append(" | - Coords : " + r.getPrintableCoordsString()  +"<br>");
+            sb.append(" | - Error after : " + StaticVariables.formatDateTimeDif(r.getRequestTime(), r.getEndTime()) + "<br>");
+            sb.append(" | - Timestamp when error occurred : " + timeFormatter.format(r.getEndTime()) + " <br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
         }
@@ -222,6 +246,9 @@ public class SpringClass {
             sb.append(" | ----------------------------------------------------------------------<br>");
             sb.append(" | - Date : " + r.getDate() + "<br>");
             sb.append(" | - Coords : \n" + r.getPrintableCoordsString() + "<br>");
+            sb.append(" | - Request time : " + timeFormatter.format(r.getRequestTime()) + "<br>");
+            sb.append(" | - Start time " + timeFormatter.format(r.getRuntimeStart()) + "<br>");
+            sb.append(" | - Runtime : " + StaticVariables.formatDateTimeDif(r.getRequestTime(), r.getEndTime()) + "<br>");
             // sb.append(" | - Link to download .map file : <a href=\"sftp:"+ StaticVariables.standardUserName + ":" + StaticVariables.standardUserPassword + "@141.45.146.200:5002/" + r.getMapName()+ ".map\">direct link</a> <br>");
             sb.append(" | ---------------------------------------------------------------------</p>");
             i++;
@@ -230,15 +257,32 @@ public class SpringClass {
         return sb.toString();
     }
 
+    @CrossOrigin(origins = "http://localhost:8080")
     @RequestMapping(value = "/request")
     //10.12345 45.3132, 10.9 55.34534535, 15.4646456 55, 15 44.3535365, 10.12345 45.3132
-    public String request(@RequestParam(value = "name", defaultValue = "testRequest") String mapname,
-                          @RequestParam(value = "coords", defaultValue = "10,45_10,55_15,55_15,45_10,45") String coords,
+    public static String request(@RequestParam(value = "name", defaultValue = "testRequest") String mapname,
+                          @RequestParam(value = "coords", defaultValue = "13.,52_14,52_14,53_13,53_13,52") String coords,
                           @RequestParam(value = "date", defaultValue = "2016-12-31") String date,
                           @RequestParam(value = "id", defaultValue = "") String id) {
 
+        if (id.trim().equals("")) {
+            try {
+                id = IDSystem.createNewID();
+            } catch (IOException e) {
+                Logger.instance.addLogEntry(INFO, TAG, "couldn't save " + id);
+            }
+        }
+
+        try {
+            if (!IDSystem.idAlreadyExists(id))
+                IDSystem.writeEntry(id);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         List<Coords> coordinates = new ArrayList<>();
-        QueryRequest q = null;
+        QueryRequest q;
         try {
             String[] coordsS = coords.split("_");
             float x;
@@ -246,16 +290,22 @@ public class SpringClass {
 
             try {
                 for (String s : coordsS) {
-                    x = Float.parseFloat(s.split(",")[0]);
-                    y = Float.parseFloat(s.split(",")[1]);
+                    String[] split = s.split(",");
+
+                    x = Float.parseFloat(split[0].trim());
+                    y = Float.parseFloat(split[1].trim());
+
+                    System.out.println(x + " , " + y + "\n");
+
                     coordinates.add(new Coords(x, y));
                 }
-            } catch (Exception e) {
+            } catch (NumberFormatException e) {
                 Logger.instance.addLogEntry(ERROR, TAG, e.toString());
+                return "couldn't convert coords";
             }
 
             // TODO : add id system
-            q = new QueryRequest(coordinates, date, mapname, id, StaticVariables.osmDir, StaticVariables.mapDir, StaticVariables.renderingParameterFilePath, StaticVariables.ohdmConverterFilePath, StaticVariables.javaJdkPath, StaticVariables.jdbcDriverFilePath);
+            q = new QueryRequest(coordinates, date, mapname, id, StaticVariables.osmDir, StaticVariables.mapDir, StaticVariables.specificLogDir, StaticVariables.renderingParameterFilePath, StaticVariables.ohdmConverterFilePath, StaticVariables.javaJdkPath, StaticVariables.jdbcDriverFilePath);
 
             Logger.instance.addLogEntry(INFO, TAG,"given Data: " + mapname + " | Date: " + date + " | coords: \n" + q.getPrintableCoordsString());
 
@@ -295,12 +345,12 @@ public class SpringClass {
     }
 
     @RequestMapping("/test")
-    public String test() {
+    public static String test() {
         return ("<head> <title> Running ? </title> </head> <body> <h1> Am I running? </h1> <p> i guess i do </p> </body>");
     }
 
     @RequestMapping("/log")
-    public String log(@RequestParam(value = "log", defaultValue = "")String selectedLog) {
+    public static String log(@RequestParam(value = "log", defaultValue = "")String selectedLog) {
         BufferedReader br;
         if (selectedLog.equals("daemon")) {
             try {
@@ -327,25 +377,62 @@ public class SpringClass {
         return output;
     }
 
-    @RequestMapping("/workingStatus")
-    public String workingStatis(@RequestParam(value = "id", defaultValue = "") String id) {
-        if (id.equals(""))
-            return "gives back everything with status";
-        else {
-            //String[][] outputArray = getInformations(id);
-            //return new Gson().toJson(outputArray);
-            return "gives back specific status things with id " + id;
+    @CrossOrigin(origins = "http://localhost:8080")
+    @RequestMapping("/statusByID")
+    public static String statusByID(@RequestParam(value = "id", defaultValue = "") String id) {
+        if (id.equals("")) {
+            String[] all = new String[serviceInstance.getAllRequests().length];
+
+            for (int i = 0; i < all.length; i++) {
+                try {
+                    all[i] = serviceInstance.getAllRequests()[i].json();
+                } catch (NullPointerException e) {
+                    System.out.println(all.length);
+                    e.printStackTrace();
+                }
+            }
+
+            String out = "[";
+            for (int i = 0; i < all.length; i++) {
+                out += all[i]; if (i < all.length - 1) out += ",";
+            }
+            out += "]";
+
+            Logger.instance.addLogEntry(INFO, TAG, "new general status request : \n" + out);
+
+            return out;
+        } else {
+            QueryRequest[] allRequests = serviceInstance.getAllRequests();
+            ArrayList<QueryRequest> all_withId = new ArrayList<>();
+
+            for (QueryRequest r :
+                    allRequests) {
+                if (r.getRequestedByID().equals(id))
+                    all_withId.add(r);
+            }
+
+            String[] all = new String[all_withId.size()];
+
+            for (int i = 0; i < all.length; i++) {
+                all[i] = all_withId.get(i).toString();
+            }
+
+            String out = new Gson().toJson(all);
+            Logger.instance.addLogEntry(INFO, TAG, "new status request by ID : \n" + "id : " + id + "\n output : " + out);
+            return out;
         }
     }
 
     @RequestMapping("/id")
-    public String id() {
+    public static String id() {
         try {
-            return IDSystem.createNewID();
+            String id = IDSystem.createNewID();
+            Logger.instance.addLogEntry(INFO, TAG, "requested new ID : " + id);
+            return id;
         } catch (IOException e) {
             e.printStackTrace();
+            return "couldn't create new ID";
         }
-        return "couldn't create new ID";
     }
 
     /**
@@ -354,7 +441,7 @@ public class SpringClass {
      * @param nme map Name
      * @return sanitized value or "noname" if no char is left
      */
-    public String sanitize_mapName(String nme) {
+    public static String sanitize_mapName(String nme) {
         String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
 
         if (nme.endsWith("osm"))
@@ -387,7 +474,7 @@ public class SpringClass {
      * @param nme map Name
      * @return true if existent, false if not
      */
-    public boolean map_exist(String nme) {
+    public static boolean map_exist(String nme) {
         File fOSM = new File(StaticVariables.osmDir + nme);
         File fMAP = new File(StaticVariables.mapDir + nme);
 

@@ -1,0 +1,8 @@
+servername:ohm.f4.htw-berlin.de
+portnumber:5432
+username:geoserver
+pwd:ohdm4ever!
+dbname:ohdm_public
+schema:public
+maxThreads:5
+renderoutput=all

@@ -41,7 +41,11 @@ public class IDSystem {
         return newID;
     }
 
-    private static void writeEntry(String id) throws IOException {
+    public static boolean writeEntry(String id) throws IOException {
+        if (idAlreadyExists(id)) {
+            return false;
+        }
+
         String temp = "";
 
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(idSaveFile)));
@@ -57,6 +61,8 @@ public class IDSystem {
         bw.write(temp);
         bw.flush();
         bw.close();
+
+        return true;
     }
 
     public static boolean idAlreadyExists(String id) throws IOException {
@@ -79,5 +85,15 @@ public class IDSystem {
             text[i] = characters.charAt(rng.nextInt(characters.length()));
         }
         return new String(text);
+    }
+
+    public static String getAllIDs() throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(idSaveFile)));
+        String read = "";
+        while (br.ready()) {
+            read += br.readLine() + "\n";
+        }
+        br.close();
+        return read;
     }
 }

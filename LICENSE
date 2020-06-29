@@ -37,7 +37,7 @@ based on the Application, and not on the Linked Version.
   The "Corresponding Application Code" for a Combined Work means the
 object code and/or source code for the Application, including any data
 and utility programs needed for reproducing the Combined Work from the
-Application, but excluding the System Libraries of the Combined Work.
+Application, but excluding the Server.LogService.System Libraries of the Combined Work.
 
   1. Exception to Section 3 of the GNU GPL.
 

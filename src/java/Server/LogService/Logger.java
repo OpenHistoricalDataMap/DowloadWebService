@@ -14,41 +14,45 @@ public class Logger extends Thread implements LoggerInt {
     public static Logger instance;
 
     private String baseFile;
-    private String currentWritingDir;
+    private File currentWritingDir;
     public File currentWritingFile;
 
     private List<LogEntry> BUFFER_LIST = new ArrayList<>();
 
-    private SimpleDateFormat dirFormatter = new SimpleDateFormat("yyyy-MM-dd");
-    private SimpleDateFormat fileFormatter = new SimpleDateFormat("HH-mm-ss z");
-    private SimpleDateFormat logFormatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+    private final SimpleDateFormat dirFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat fileFormatter = new SimpleDateFormat("HH-mm-ss z");
+    private final SimpleDateFormat logFormatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
 
-    private Boolean isWaiting = false;
-    public boolean isRunning = false;
+    private final String logDefaultDir;
+    private final int maxLogFileSize;
+    private final boolean logTerminalOutput;
 
-    public boolean stop = false;
-
-    private boolean newDirCreated = false;
-
-    private String logDefaultDir;
-    private int maxLogFileSize;
-    private boolean logTerminalOutput;
+    private boolean stop = false;
+    private boolean isWaiting = false;
+    private boolean isRunning = false;
 
     public Logger(String logDefaultDir, int maxLogFileSize, boolean logTerminalOutput) {
-
         this.logDefaultDir = logDefaultDir;
         this.maxLogFileSize = maxLogFileSize;
         this.logTerminalOutput = logTerminalOutput;
 
         this.baseFile = "LOG";
 
-        Date date = new Date(System.currentTimeMillis());
-        this.currentWritingDir = logDefaultDir + dirFormatter.format(date);
-
-        if (!new File(currentWritingDir).exists())
-            new File(currentWritingDir).mkdir();
-
+        long date = System.currentTimeMillis();
+        this.currentWritingDir = new File(logDefaultDir + dirFormatter.format(date));
         this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(date) +"].txt");
+
+
+        if (!this.currentWritingDir.exists())
+            this.currentWritingDir.mkdir();
+
+        if (!this.currentWritingFile.exists()) {
+            try {
+                this.currentWritingFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         if (instance == null)
             instance = this;
@@ -69,31 +73,30 @@ public class Logger extends Thread implements LoggerInt {
     }
 
     private void swapToNextFileIfNecessary() throws IOException {
-        if (currentWritingFile.length() / 1000 > maxLogFileSize) {
+        if ((float) this.currentWritingFile.length() / 1000 > maxLogFileSize) {
             this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(System.currentTimeMillis()) +"].txt");
 
-            if (!currentWritingFile.exists())
-                currentWritingFile.createNewFile();
+            if (!this.currentWritingFile.exists())
+                this.currentWritingFile.createNewFile();
         }
     }
 
     private void swapToNextDayDirIfNecessary() throws IOException {
         Date date = new Date(System.currentTimeMillis());
 
-        if (!currentWritingDir.equals(logDefaultDir + dirFormatter.format(date))) {
-            File nwd = new File(logDefaultDir + dirFormatter.format(date));
+        String checkName = logDefaultDir + dirFormatter.format(date);
+        if (!this.currentWritingDir.getPath().equals(checkName)) {
+            this.currentWritingDir = new File(logDefaultDir + dirFormatter.format(date));
 
-            if (!nwd.exists())
-                nwd.mkdir();
+            if (!this.currentWritingDir.exists())
+                if (!this.currentWritingDir.mkdir()) {
+                    System.out.println("couldn't create new writing dir");
+                }
 
-            currentWritingDir = "./" + nwd.getName();
+            this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "[" + fileFormatter.format(System.currentTimeMillis()) + "].txt");
 
-            this.currentWritingFile = new File(currentWritingDir + "/" + baseFile.replace(".txt", "") + "["+ fileFormatter.format(System.currentTimeMillis()) +"].txt");
-
-            if (!currentWritingFile.exists())
-                currentWritingFile.createNewFile();
-
-            newDirCreated = true;
+            if (!this.currentWritingFile.exists())
+                this.currentWritingFile.createNewFile();
         }
     }
 
@@ -105,15 +108,7 @@ public class Logger extends Thread implements LoggerInt {
     @Override
     public synchronized void run() {
         isRunning = true;
-        if (!currentWritingFile.exists()) {
-            try {
-                currentWritingFile.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        while (true) {
+        do {
             try {
                 swapToNextDayDirIfNecessary();
             } catch (IOException e) {
@@ -124,6 +119,7 @@ public class Logger extends Thread implements LoggerInt {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
             if (BUFFER_LIST.isEmpty()) {
                 isWaiting = true;
                 try {
@@ -141,9 +137,11 @@ public class Logger extends Thread implements LoggerInt {
                 BUFFER_LIST.remove(0);
             }
 
-            if (stop)
+            if (stop) {
+                isRunning = false;
                 return;
-        }
+            }
+        } while (true);
     }
 
     private void writeEntry(LogEntry entry) throws IOException {
@@ -170,5 +168,9 @@ public class Logger extends Thread implements LoggerInt {
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(currentWritingFile)));
         bw.write(temp);
         bw.close();
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 }

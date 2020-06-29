@@ -1,8 +1,11 @@
 package Server;
 
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.StringTokenizer;
 
-class StaticVariables {
+public class StaticVariables {
 
     public StaticVariables(String defaultInitFile) {
         StaticVariables.defaultInitFile = defaultInitFile;
@@ -32,6 +35,7 @@ class StaticVariables {
     public static String osmDir;
     public static String mapDir;
     public static String ohdmDir = "";
+    public static String specificLogDir;
 
     public static String sftpServiceMapDir = mapDir;
     public static String sftpDefaultKeyFile = sftpDefaultDir + "hostKeySave.ser";
@@ -42,7 +46,9 @@ class StaticVariables {
 
     public static String javaJdkPath = "java";
 
-    // -------------------------------------------------------------------------------//
+    // ------------------------------------------------------------------------------- //
+        public static final long oneHourInMs = 3600000;
+    // ------------------------------------------------------------------------------- //
 
     public static void init() throws IOException {
         if (!new File(defaultInitFile).exists())
@@ -124,8 +130,7 @@ class StaticVariables {
 
             case "idSavePath" : idSavePath = s[1].trim(); break;
 
-            case "maxLogFileSize":
-                try {
+            case "maxLogFileSize": try {
                     maxLogFileSize = Integer.parseInt(s[1].trim());
                 } catch (NumberFormatException e) {
                     maxLogFileSize = 512;
@@ -143,13 +148,40 @@ class StaticVariables {
         osmDir = mapsDefaultDir + "osm";
         mapDir = mapsDefaultDir + "map";
         ohdmDir = "";
+        specificLogDir = mapsDefaultDir + "req";
 
         sftpServiceMapDir = mapDir;
         sftpDefaultKeyFile = sftpDefaultDir + "hostKeySave.ser";
 
         new File(osmDir).mkdir();
         new File(mapDir).mkdir();
+        new File(specificLogDir).mkdir();
 
         new File(sftpDefaultKeyFile).createNewFile();
+    }
+
+    public static String formatDateTimeDif(LocalDateTime time1, LocalDateTime time2) {
+
+        LocalDateTime tempDateTime = LocalDateTime.from(time1);
+
+        long days = tempDateTime.until(time2, ChronoUnit.DAYS );
+        tempDateTime = tempDateTime.plusDays( days );
+
+        long hours = tempDateTime.until(time2, ChronoUnit.HOURS );
+        tempDateTime = tempDateTime.plusHours( hours );
+
+        long minutes = tempDateTime.until(time2, ChronoUnit.MINUTES );
+        tempDateTime = tempDateTime.plusMinutes( minutes );
+
+        long seconds = tempDateTime.until(time2, ChronoUnit.SECONDS );
+
+        String returner = "";
+
+        if ((int) (days / 10) == 0) returner += "0" + days + "days "; else returner += days + "days ";
+        if ((int) (hours / 10) == 0) returner += "0" + hours + ":"; else returner += hours + ":";
+        if ((int) (minutes / 10) == 0) returner += "0" + minutes + ":"; else returner += minutes + ":";
+        if ((int) (seconds / 10) == 0) returner += "0" + seconds + ""; else returner += seconds + "";
+
+        return returner;
     }
 }

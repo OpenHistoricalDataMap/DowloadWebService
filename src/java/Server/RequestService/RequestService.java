@@ -5,6 +5,7 @@ import Server.CustomObjects.QueryRequest;
 import Server.LogService.Logger;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static Server.CustomObjects.LogType.ERROR;
 import static Server.CustomObjects.LogType.INFO;
@@ -55,7 +56,29 @@ public class RequestService extends Thread implements srvInterface {
         return ERROR_LIST;
     }
 
+    public QueryRequest[] getAllRequests() {
+        ArrayList<QueryRequest> all = new ArrayList<>();
+        int indx = 0;
+        for (QueryRequest r : BUFFER_LIST) {
+            all.add(r);
+            indx++;
+        }
+        for (QueryRequest r : WORKER_LIST) {
+            all.add(r);
+            indx++;
+        }
+        for (QueryRequest r : DONE_LIST) {
+            all.add(r);
+            indx++;
+        }
+        for (QueryRequest r : ERROR_LIST) {
+            all.add(r);
+            indx++;
+        }
+        return all.toArray(new QueryRequest[all.size()]);
+    }
     public void stopThread() {
+        stopRunningThread(0);
         stop = true;
         interrupt();
     }
@@ -132,6 +155,16 @@ public class RequestService extends Thread implements srvInterface {
         }
     }
 
+    public String stopRunningThread(int i) {
+        if (i > WORKER_LIST.size())
+            return "no such request exist to stop";
+        else {
+            QueryRequest selected;
+            try { selected = WORKER_LIST.get(i-1); } catch (IndexOutOfBoundsException e) { return "no such request exist to stop"; }
+            return selected.stopThread();
+        }
+    }
+
     // This Thread doesn't really do much, except going through all the Lists and Update their Positions in the Lists
     @Override
     public synchronized void run() {
@@ -185,5 +218,21 @@ public class RequestService extends Thread implements srvInterface {
             Logger.instance.addLogEntry(LogType.ERROR, TAG,"Service Failed due to Exception thrown " + e.getMessage());
             running = false;
         }
+    }
+
+    public String resetBuffer() {
+        String returnString = "reset Buffer list to it's clear state | number of deleted Requests : " + BUFFER_LIST.size();
+        BUFFER_LIST = new ArrayList<>();
+        return returnString;
+    }
+    public String resetDone() {
+        String returnString = "reset 'Done' list to it's clear state | number of deleted Requests : " + DONE_LIST.size();
+        DONE_LIST = new ArrayList<>();
+        return returnString;
+    }
+    public String resetError() {
+        String returnString = "reset 'Error' list to it's clear state | number of deleted Requests : " + ERROR_LIST.size();
+        ERROR_LIST = new ArrayList<>();
+        return returnString;
     }
 }
