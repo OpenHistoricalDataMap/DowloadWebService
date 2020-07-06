@@ -2,8 +2,11 @@ package Server.RequestService;
 
 import Server.CustomObjects.LogType;
 import Server.CustomObjects.QueryRequest;
+import Server.CustomObjects.QueryRequestStatus;
 import Server.LogService.Logger;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,18 +91,36 @@ public class RequestService extends Thread implements srvInterface {
      * @param request
      */
     public void add(QueryRequest request) {
-        // if there is space in the WORKER_LIST, it actually will directly put it in the WORKER_LIST and activate it
-        if (WORKER_LIST.size() < maxInWorkerList) {
-            WORKER_LIST.add(request);
-            request.start();
-            Logger.instance.addLogEntry(INFO, TAG, "added request : " + request.getMapName() + " and started it");
-        } else {
-            // if there is no space in the WORKER_LIST, it just adds it to the BUFFER_LIST
-            BUFFER_LIST.add(request);
-            Logger.instance.addLogEntry(INFO, TAG,"added request : " + request.getMapName());
+        // if the Request was an null object
+        // then it will just stop here
+        if (request == null)
+            return;
 
-            if (!active)
-                this.interrupt();
+        // since it can happen, that Requests with different kind of States are added
+        // if want to check first, hẃhere I should add them
+        // if they where stopped on the last File update, then they will be added to the Error List
+        if (request.getStatus() == QueryRequestStatus.DONE) {
+            DONE_LIST.add(request);
+            return;
+        } else if(request.getStatus() == QueryRequestStatus.ERROR) {
+            ERROR_LIST.add(request);
+            return;
+        } else if (request.getStatus() == QueryRequestStatus.REQUESTED) {
+            // if there is space in the WORKER_LIST, it actually will directly put it in the WORKER_LIST and activate it
+            if (WORKER_LIST.size() < maxInWorkerList) {
+                WORKER_LIST.add(request);
+                request.start();
+                Logger.instance.addLogEntry(INFO, TAG, "added request : " + request.getMapName() + " and started it");
+            } else {
+                // if there is no space in the WORKER_LIST, it just adds it to the BUFFER_LIST
+                BUFFER_LIST.add(request);
+                Logger.instance.addLogEntry(INFO, TAG, "added request : " + request.getMapName());
+
+                if (!active)
+                    this.interrupt();
+            }
+        } else {
+            ERROR_LIST.add(request);
         }
     }
 

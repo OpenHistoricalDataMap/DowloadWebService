@@ -12,12 +12,21 @@ import com.google.gson.Gson;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -89,6 +98,21 @@ public class SpringClass {
         sftpInstance = new SftpService(StaticVariables.sftpPort, StaticVariables.standardUserName, StaticVariables.standardUserPassword, StaticVariables.sftpDefaultKeyFile, StaticVariables.sftpServiceMapDir, StaticVariables.msgPath);
         sftpThread = sftpInstance;
         sftpThread.start();
+
+        // filling up the Request Manager with file-saved Requests from the req-File-Directory
+        fillRequestManager();
+    }
+
+    private static void fillRequestManager() {
+        //List of all files and directories
+        File filesList[] = new File(StaticVariables.specificLogDir).listFiles();
+        for(File file : filesList) {
+            QueryRequest tmp = new QueryRequest().QueryRequest(file.getPath().replace("/" + file.getName(), ""), file.getName().replace(".req", ""));
+            if (tmp.getMapName() != null) {
+                serviceInstance.add(tmp);
+                Logger.instance.addLogEntry(INFO, TAG, "added " + tmp.getMapName() + " to the Request Manager");
+            }
+        }
     }
 
     public static void main(String[] args) throws IOException {
@@ -105,6 +129,7 @@ public class SpringClass {
     }
 
     public static String reloadRequestService() throws IOException {
+        // Method to read, initialize and define all ll 
         StaticVariables.init();
         StaticVariables.createStdFilesAndDirs();
         ArrayList<QueryRequest> bufferSave = serviceInstance.getBUFFER_LIST();
@@ -257,7 +282,7 @@ public class SpringClass {
         return sb.toString();
     }
 
-    @CrossOrigin(origins = "http://localhost:8080")
+    @CrossOrigin(origins = "http://141.45.146.200:8080")
     @RequestMapping(value = "/request")
     //10.12345 45.3132, 10.9 55.34534535, 15.4646456 55, 15 44.3535365, 10.12345 45.3132
     public static String request(@RequestParam(value = "name", defaultValue = "testRequest") String mapname,
@@ -377,7 +402,7 @@ public class SpringClass {
         return output;
     }
 
-    @CrossOrigin(origins = "http://localhost:8080")
+    @CrossOrigin(origins = "http://141.45.146.200:8080")
     @RequestMapping("/statusByID")
     public static String statusByID(@RequestParam(value = "id", defaultValue = "") String id) {
         if (id.equals("")) {
@@ -432,6 +457,52 @@ public class SpringClass {
         } catch (IOException e) {
             e.printStackTrace();
             return "couldn't create new ID";
+        }
+    }
+
+    //@CrossOrigin(origins = "http://141.45.146.200:8080")
+    @RequestMapping("/maps")
+    public static Object mapsDownload(@RequestParam(value = "name", defaultValue = "")String name) {
+        QueryRequest requestAskedFor = null;
+        if (name.equals(""))
+            return "no name requested";
+
+        for (QueryRequest r :
+                serviceInstance.getAllRequests()) {
+            if (r.getMapName().equals(name))
+                requestAskedFor = r;
+        }
+
+        if (requestAskedFor == null) {
+            Logger.instance.addLogEntry(INFO, TAG, "download http request : " + name + " (not found)");
+            return "no request found with name : " + name;
+        }
+
+        else {
+            File file = new File(StaticVariables.mapDir + "/" + requestAskedFor.getMapName() + ".map");
+            if (!file.exists()) {
+                Logger.instance.addLogEntry(INFO, TAG, "download http request : " + name + " (no file found)");
+                return "no file found for given request " + name;
+            }
+
+            Path path = Paths.get(file.getAbsolutePath());
+            ByteArrayResource resource = null;
+            try {
+                resource = new ByteArrayResource(Files.readAllBytes(path));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Access-Control-Allow-Origin", "*");
+
+            Logger.instance.addLogEntry(INFO, TAG, "download http request : " + name + " (successful)");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(file.length())
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(resource);
         }
     }
 

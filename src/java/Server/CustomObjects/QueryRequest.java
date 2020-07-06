@@ -6,17 +6,17 @@ import com.google.gson.Gson;
 
 import java.io.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 public class QueryRequest extends Thread {
 
-    private final List<Coords> coordinates;
-    private final String date;
+    private List<Coords> coordinates;
+    private String date;
     private String mapName;
-    private final String requestedByID;
+    private String requestedByID;
 
-    private final LocalDateTime startTime = LocalDateTime.now();
+    private LocalDateTime startTime = LocalDateTime.now();
     private LocalDateTime runtimeStart;
     private LocalDateTime endTime;
 
@@ -24,18 +24,18 @@ public class QueryRequest extends Thread {
 
     private String errorMessage = "";
 
-    private final String TAG;
+    private String TAG;
     private String LOG = "";
 
-    private final String osmDir;
-    private final String mapDir;
-    private final String sLogDir;
+    private String osmDir;
+    private String mapDir;
+    private String sLogDir;
 
-    private final String renderingParameter;
-    private final String ohdmConverter;
+    private String renderingParameter;
+    private String ohdmConverter;
 
-    private final String javaJdkPath;
-    private final String jdbcDriverPath;
+    private String javaJdkPath;
+    private String jdbcDriverPath;
 
     private String individualLogFile;
 
@@ -60,6 +60,23 @@ public class QueryRequest extends Thread {
         this.individualLogFile = sLogDir + "/" + mapName + ".req";
 
         TAG = mapName + "_" + getRequestedByID() + "-Thread";
+    }
+
+    public QueryRequest() {
+
+    }
+
+    public QueryRequest QueryRequest(String sLogDir, String mapName) {
+        this.individualLogFile = sLogDir + "/" + mapName + ".req";
+        try {
+            if (readIndivLogFile())
+                return this;
+            else {
+                 return new QueryRequest(null, null, null, null, null, null, null, null, null, null, null);
+            }
+        } catch (IOException e) {
+            return new QueryRequest(null, null, null, null, null, null, null, null, null, null, null);
+        }
     }
 
     public Coords[] getCoordinates() {
@@ -366,17 +383,19 @@ public class QueryRequest extends Thread {
 
         // indiv write
         output += "name : " + mapName + "\n";
-        output += "coords : " + getPrintableCoordsString(" | ");
+        output += "coords : " + new Gson().toJson(coordinates) + "\n";
         output += "date : " + date + "\n";
         output += "id : " + requestedByID + "\n";
-        output += "status : " + status + "\n";
+        output += "status : " + new Gson().toJson(status) + "\n";
         output += "-----------------------------------------------------------------------------------------------\n";
-        output += "startTime : " + startTime.toString() + "\n";
-        output += "runTimeStart : " + runtimeStart.toString() + "\n";
-        if (endTime != null) { output += "endTime : " + endTime.toString() + "\n"; }
+        output += "startTime : " + new Gson().toJson(startTime) + "\n";
+        if (endTime != null) { output += "runTimeStart : " + new Gson().toJson(runtimeStart) + "\n"; }
+        if (endTime != null) { output += "endTime : " + new Gson().toJson(endTime) + "\n"; }
         output += "-----------------------------------------------------------------------------------------------\n";
         output += "tagInLog : " + TAG + "\n";
         output += "-----------------------------------------------------------------------------------------------\n";
+        output += "osmDir : " + osmDir + "\n";
+        output += "mapDir : " + mapDir + "\n";
         output += "osmFile : " + osmDir + "/" + mapName + ".osm" + "\n";
         output += "mapFile : " + mapDir + "/" + mapName + ".map" + "\n";
         output += "renderParamFile : " + renderingParameter + "\n";
@@ -384,13 +403,102 @@ public class QueryRequest extends Thread {
         output += "javaPath : " + javaJdkPath + "\n";
         output += "jdbcPath : " + jdbcDriverPath + "\n\n";
         output += "-----------------------------------------------------------------------------------------------\n";
-        output += "current log : \n" + LOG;
+        output += "current log:\n " + LOG;
         // end indiv write
 
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(individualLogFile))));
         bw.write(output);
         bw.flush();
         bw.close();
+    }
+
+    private boolean readIndivLogFile() throws IOException {
+        File read = new File(individualLogFile);
+        if (!read.exists())
+            return false;
+
+        String fileContent = "";
+        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(read)));
+        while (br.ready())
+            fileContent += br.readLine() + "\n";
+
+        for (String s:fileContent.split("\n")) {
+            try {
+                String[] split = s.split(": ");
+                switch (split[0].trim()) {
+                    case "name":
+                        mapName = split[1].trim();
+                        break;
+
+                    case "coords":
+                        // Reverse the convertion from List to Json String---
+                        ArrayList listRecovered = new Gson().fromJson(split[1], ArrayList.class);
+                        ArrayList<Coords> realListRec = new ArrayList<>();
+                        for (int i = 0; i < listRecovered.size(); i++) {
+                            realListRec.add(new Gson().fromJson(listRecovered.get(i).toString(), Coords.class));
+                        }
+                        // -------------------------------------------------
+                        coordinates = realListRec;
+                        break;
+
+                    case "date":
+                        date = split[1].trim();
+                        break;
+
+                    case "id":
+                        requestedByID = split[1].trim();
+                        break;
+
+                    case "status":
+                        status = new Gson().fromJson(split[1], QueryRequestStatus.class);
+                        break;
+
+                    case "startTime":
+                        startTime = new Gson().fromJson(split[1], LocalDateTime.class);
+                        break;
+
+                    case "runTimeStart":
+                        runtimeStart = new Gson().fromJson(split[1], LocalDateTime.class);
+                        break;
+
+                    case "endTime":
+                        endTime = new Gson().fromJson(split[1], LocalDateTime.class);
+                        break;
+
+                    case "tagInLog":
+                        TAG = split[1].trim();
+                        break;
+
+                    case "osmDir":
+                        osmDir = split[1].trim();
+                        break;
+
+                    case "mapDir":
+                        mapDir = split[1].trim();
+                        break;
+
+                    case "renderParamFile":
+                        renderingParameter = split[1].trim();
+                        break;
+
+                    case "OHDMConverterFile":
+                        ohdmConverter = split[1].trim();
+                        break;
+
+                    case "javaPath":
+                        javaJdkPath = split[1].trim();
+                        break;
+
+                    case "jdbcPath":
+                        jdbcDriverPath = split[1].trim();
+                        break;
+
+                }
+            } catch (Exception e) {
+                Logger.instance.addLogEntry(LogType.ERROR, "init QueryFile", "failed to read a specific value ... \n" + e.getStackTrace()[0]);
+            }
+        }
+        return true;
     }
 
     @Override

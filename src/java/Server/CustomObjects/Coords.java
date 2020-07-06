@@ -13,6 +13,6 @@ public class Coords {
 
     @Override
     public String toString() {
-        return String.valueOf(x + ' ' + y);
+        return String.valueOf(x.toString() + ' ' + y.toString());
     }
 }
