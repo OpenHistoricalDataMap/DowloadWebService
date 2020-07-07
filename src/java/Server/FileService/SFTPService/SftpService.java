@@ -1,6 +1,7 @@
 package Server.FileService.SFTPService;
 
 import Server.CustomObjects.LogType;
+import Server.FileService.FileService;
 import Server.LogService.Logger;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
@@ -21,46 +22,73 @@ import java.util.ArrayList;
 import java.util.List;
 
 // based on ssh protocol, library used : apache mina sshd
-public class SftpService extends Thread {
+public class SftpService extends Thread implements FileService {
     // since sftp is based on ssh , we're using an base ssh server
     private SshServer sshServer;
 
+    // the port, that will be used to access
     private int port;
+    // standard user for the access from the app
     private SftpUser standardUser;
+    // controller access for the controller
     private SftpUser controller;
 
+    // path for the app access
     private String sharePath;
+    // path for the controller msg
     private String msgPath;
+    // shows, if the SFTP Server Thread is running
     public boolean isRunning = false;
+
     // this is the hostKey Save File
     // if you don't know what it does, you should go on this wiki and read all about sftp
     private static String keySaveFilePath;
 
+    // command factory for the sftp server
     private List<NamedFactory<Command>> sftpCommandFactory;
+    // User Authentication Factory for the ssh server
     private List<NamedFactory<UserAuth>> userAuthFactories;
+    // VirtualFileSystemFactory for the current access
     private VirtualFileSystemFactory vfsf;
+    // namedFactoryList for the sshServer
     private List<NamedFactory<Command>> namedFactoryList;
 
-    private static final String LOG_TAG = "SFTP-Service";
+    // Tag for the Logger
+    private static final String TAG = "SFTP-Service";
 
-    public SftpService(int port, String stdUsername, String stdPassw, String keySaveFilePath, String sharePath, String msgPath) {
-        this.keySaveFilePath = keySaveFilePath;
+    /**
+     * Constructor
+     * @param port the port, that will be used to access
+     * @param stdUsername standard user-name for the access from the app
+     * @param stdPasswd standard user-password for the access from the app
+     * @param keySaveFilePath hostKey Save File
+     * @param sharePath path for the app access
+     * @param msgPath path for the controller msg
+     */
+    public SftpService(int port, String stdUsername, String stdPasswd, String keySaveFilePath, String sharePath, String msgPath) {
+        SftpService.keySaveFilePath = keySaveFilePath;
         this.port = port;
         this.sharePath = sharePath;
         this.msgPath = msgPath;
 
         // setting up the standard user, these are the credentials used by the Android app
-        standardUser = new SftpUser(stdUsername, stdPassw);
+        standardUser = new SftpUser(stdUsername, stdPasswd);
         controller = new SftpUser("controller", "eqpS23PTagZgHmJcFQMBLgJv");
 
     }
 
+    /**
+     * Setup method for the ssh -> sftp server
+     * @throws IOException exception can be thrown when accessing the keySaveFile
+     */
     private void setup() throws IOException {
+        // setting up the ssh Server
         sshServer = SshServer.setUpDefaultServer();
+        // setting up the ssh connection port
         sshServer.setPort(port);
 
         // setting up the path to the key saver file -
-        // THIS NEED'S TO BE CONSTANT AND FINAL, PLEASE DO NOT CHANGE THE FILE AFTER DEPLOYMENT !!!
+        // THIS NEEDS TO BE CONSTANT AND FINAL, PLEASE DO NOT CHANGE THE FILE AFTER DEPLOYMENT !!!
         if (!new File(keySaveFilePath).exists()) {
             new File(keySaveFilePath).createNewFile();
         }
@@ -80,14 +108,14 @@ public class SftpService extends Thread {
         sshServer.setPasswordAuthenticator(new PasswordAuthenticator() {
             public boolean authenticate(String username, String password, ServerSession session) {
                 if (username.equals(standardUser.getUsername()) && password.equals(standardUser.getPassword())) {
-                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "new log-in " + session.getClientAddress() + " | public key \n" + session.getHostKey().getPublic()
+                    Logger.instance.addLogEntry(LogType.INFO, TAG, "new log-in " + session.getClientAddress() + " | public key \n" + session.getHostKey().getPublic()
                             + "\n used credentials : username=" + standardUser.getUsername() + " password=" + standardUser.getEncryptedPass() + " (encrypted)");
                     return true;
                 } else if (username.equals(controller.getUsername()) && password.equals(controller.getPassword())) {
-                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "new controller login " + session.getClientAddress());
+                    Logger.instance.addLogEntry(LogType.INFO, TAG, "new controller login " + session.getClientAddress());
                     return true;
                 } else {
-                    Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "failed login " + session.getClientAddress() + " with login name : " + username + " wrong password/wrong username");
+                    Logger.instance.addLogEntry(LogType.INFO, TAG, "failed login " + session.getClientAddress() + " with login name : " + username + " wrong password/wrong username");
                     return false;
                 }
             }
@@ -107,31 +135,39 @@ public class SftpService extends Thread {
         namedFactoryList.add(new SftpSubsystemFactory());
         sshServer.setSubsystemFactories(namedFactoryList);
 
-        // starting the ssh server ( out sftp server )
+        // starting the ssh server ( -> sftp server )
         sshServer.start();
-        Logger.instance.addLogEntry(LogType.INFO, LOG_TAG, "started sftp Session \nPort: " + port + " \nsharedPath: " + sharePath + "\n success: " + sshServer.isOpen());
+        Logger.instance.addLogEntry(LogType.INFO, TAG, "started sftp Session \nPort: " + port + " \nsharedPath: " + sharePath + "\n success: " + sshServer.isOpen());
     }
 
-    public void exitService() {
+    /**
+     * method to stop the Service
+     */
+    @Override
+    public void stopThread() {
         if (isRunning)
             this.interrupt();
         else
             throw new NullPointerException("service isn't running yet");
-        return;
     }
 
+    /**
+     * runner
+     */
     @Override
     public synchronized void run() {
         try {
+            // setup for the sftp Server
             setup();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        // setting the status to "running"
         isRunning = true;
         try {
             wait();
         } catch (InterruptedException e) {
-            // exiting
+            Logger.instance.addLogEntry(LogType.INFO, TAG, "SftpService was interrupted adn needs to be restarted");
         }
     }
 }

@@ -167,7 +167,7 @@ public class ControllerEndpoint extends Thread {
                 return answer;
 
             case LOG_KEY :
-                File loggerFile = Logger.instance.currentWritingFile;
+                File loggerFile = Logger.instance.getCurrentWritingFile();
                 br = new BufferedReader(new InputStreamReader(new FileInputStream(loggerFile)));
                 while (br.ready())
                     answer += br.readLine() + "\n";

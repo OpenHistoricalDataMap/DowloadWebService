@@ -1,4 +1,4 @@
-package Server.RequestService;
+package Server.RequestManager;
 
 import Server.CustomObjects.LogType;
 import Server.CustomObjects.QueryRequest;
@@ -8,12 +8,11 @@ import Server.LogService.Logger;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 
 import static Server.CustomObjects.LogType.ERROR;
 import static Server.CustomObjects.LogType.INFO;
 
-public class RequestService extends Thread implements srvInterface {
+public class RequestManager extends Thread implements srvInterface {
 
     private ArrayList<QueryRequest> BUFFER_LIST = new ArrayList<>();
 
@@ -22,12 +21,12 @@ public class RequestService extends Thread implements srvInterface {
     private ArrayList<QueryRequest> ERROR_LIST = new ArrayList<>();
     private int maxInWorkerList = 5;
 
-    public RequestService(ArrayList<QueryRequest> BUFFER_LIST, int maxInWorkerList) {
+    public RequestManager(ArrayList<QueryRequest> BUFFER_LIST, int maxInWorkerList) {
         this.BUFFER_LIST = BUFFER_LIST;
         this.maxInWorkerList = maxInWorkerList;
     }
 
-    public RequestService() {
+    public RequestManager() {
 
     }
 
@@ -35,7 +34,7 @@ public class RequestService extends Thread implements srvInterface {
     private boolean active = false;
     private boolean full = false;
 
-    private String TAG = "WebService-Thread";
+    private static final String TAG = "WebService-Thread";
     private boolean stop = false;
 
     public boolean isActive() {
@@ -80,6 +79,8 @@ public class RequestService extends Thread implements srvInterface {
         }
         return all.toArray(new QueryRequest[all.size()]);
     }
+
+    @Override
     public void stopThread() {
         stopRunningThread(0);
         stop = true;
@@ -130,7 +131,7 @@ public class RequestService extends Thread implements srvInterface {
      * and puts them into their specified Lists
      * (so either ERROR_LIST or DONE_LIST)
      */
-    void cleanWorkerList() {
+    private void cleanWorkerList() {
         //
         for (int i = 0; i < WORKER_LIST.size(); i++) {
             switch (WORKER_LIST.get(i).getStatus()) {
@@ -150,9 +151,9 @@ public class RequestService extends Thread implements srvInterface {
     }
 
     /**
-     * method to fill WORKER_LIST if there is space for it
-      */
-    void setObjectsToActive() {
+     * fills empty slots in the WORKER_LIST by adding new Requests from the BUFFER_LIST, and starts them
+     */
+    private void setObjectsToActive() {
         // first it figures out how much space is actually on the WORKER_LIST
         int availableItems =  maxInWorkerList - WORKER_LIST.size();
 
@@ -176,17 +177,9 @@ public class RequestService extends Thread implements srvInterface {
         }
     }
 
-    public String stopRunningThread(int i) {
-        if (i > WORKER_LIST.size())
-            return "no such request exist to stop";
-        else {
-            QueryRequest selected;
-            try { selected = WORKER_LIST.get(i-1); } catch (IndexOutOfBoundsException e) { return "no such request exist to stop"; }
-            return selected.stopThread();
-        }
-    }
 
     // This Thread doesn't really do much, except going through all the Lists and Update their Positions in the Lists
+
     @Override
     public synchronized void run() {
         // sets Token "running" to true for debug purposes
@@ -205,7 +198,7 @@ public class RequestService extends Thread implements srvInterface {
                 // (so either ERROR_LIST or DONE_LIST)
                 cleanWorkerList();
 
-                // fills empty slots in the WORKER_LIST by adding new Requests from the BUFFER_LIST
+                // fills empty slots in the WORKER_LIST by adding new Requests from the BUFFER_LIST, and starts them
                 setObjectsToActive();
 
                 // if the BUFFER_LIST is empty, then the service will turn inactive and wait for a "wake-up"
@@ -221,6 +214,16 @@ public class RequestService extends Thread implements srvInterface {
                         }
                         active = true;
                     }
+                    // if the WORKER_LISTs Size is equal to the max of Workers being allowed to be processed
+                    // at once, then the boolean full will be set, so no new Requests can be added to the
+                    // WORKER_LIST. After that  it will wait for an intterput to happen, which can be called on 2
+                    // different occasions :
+
+                    /* Occasions 1 = An Request is done, so it calles an interrput, so the WORKER, ERROR and DONE
+                    lists can be updated.*/
+
+                    /* Occaison 2 = The Request Manager is asked to shutdown, by the stopThread Method. In this
+                    case, the booleans will be set to default and the run() Method calls a return */
                 } else if (WORKER_LIST.size() == maxInWorkerList)
                 {
                     try {
@@ -229,31 +232,47 @@ public class RequestService extends Thread implements srvInterface {
                     } catch (InterruptedException e) {
                         if (stop) {
                             Logger.instance.addLogEntry(INFO, TAG, "Service ended");
+                            running = false;
+                            active = false;
+                            full = false;
                             return;
                         }
                         full = false;
                     }
                 }
             }
+        // if an Exception was trown, which wasn't handled before, it will be cauch here
         } catch (Exception e) {
             Logger.instance.addLogEntry(LogType.ERROR, TAG,"Service Failed due to Exception thrown " + e.getMessage());
             running = false;
         }
     }
-
+    @Override
     public String resetBuffer() {
         String returnString = "reset Buffer list to it's clear state | number of deleted Requests : " + BUFFER_LIST.size();
         BUFFER_LIST = new ArrayList<>();
         return returnString;
     }
+    @Override
     public String resetDone() {
         String returnString = "reset 'Done' list to it's clear state | number of deleted Requests : " + DONE_LIST.size();
         DONE_LIST = new ArrayList<>();
         return returnString;
     }
+    @Override
     public String resetError() {
         String returnString = "reset 'Error' list to it's clear state | number of deleted Requests : " + ERROR_LIST.size();
         ERROR_LIST = new ArrayList<>();
         return returnString;
+    }
+    @Override
+    public String stopRunningThread(int i) {
+        if (i > WORKER_LIST.size())
+            return "no such request exist to stop";
+        else {
+            QueryRequest selected;
+            try { selected = WORKER_LIST.get(i-1); } catch (IndexOutOfBoundsException e) { return "no such request exist to stop"; }
+            return selected.stopThread();
+        }
     }
 }

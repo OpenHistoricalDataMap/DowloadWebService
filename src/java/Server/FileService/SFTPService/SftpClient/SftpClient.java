@@ -1,6 +1,5 @@
 package Server.FileService.SFTPService.SftpClient;
 
-import Server.FileService.FileServerClient;
 import com.jcraft.jsch.*;
 
 import java.io.IOException;

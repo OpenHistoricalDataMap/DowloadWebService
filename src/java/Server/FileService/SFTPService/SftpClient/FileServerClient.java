@@ -1,4 +1,4 @@
-package Server.FileService;
+package Server.FileService.SFTPService.SftpClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
