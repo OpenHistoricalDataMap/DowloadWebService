@@ -8,6 +8,8 @@ Hi, my name is Note (Tino Geißler) and I'm one of the People who worked on this
 
 I really had fun working on on this and I hope you will too. To make it easier getting into this Project, maybe answering some questions you maybe have and showing some tough processes I put into this, I wanted to write a **Starting Guide** for people which want to work further on this. 
 
+**All the Documentation can be found in the Wiki**
+
 If you got any questions you want to have answered, as long as I'm still a Student at the HTW Berlin, my E-Mail is
 _[Tino.Geissler@student.htw-berlin.de](mailto:Tino.Geissler@student.htw-berlin.de)_ . 
 
@@ -43,7 +45,7 @@ The Program itself is "module based".
 
 These Modules are:
 
-+ [The Request Manager]()
++ [The Request Manager](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/The-Request-Manager)
 
   + Manager for the Query Requests, can start and stop ongoing "Requests". 
 
@@ -53,7 +55,7 @@ These Modules are:
 
     
 
-+ [The Web Service]() (Spring Boot)
++ [The Web Service](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/Main-Class-:-SpringClass) (Spring Boot)
 
   + just takes HTTP Requests and processes them
 
@@ -61,7 +63,7 @@ These Modules are:
 
     
 
-+ [The SFTP File Service]() (Apache MINA)
++ [The SFTP File Service](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/SFTP-File-Service) (Apache MINA)
 
   + used to create an SFTP Server
 
@@ -69,7 +71,7 @@ These Modules are:
 
      
 
-+ [The ID Management "System"]()
++ [The ID Management "System"](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/ID-System-Module)
 
   + Just saves/creates/deletes IDs 
 
@@ -77,7 +79,7 @@ These Modules are:
 
     
 
-+ [The Query Requests]()
++ [The Query Requests](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/The-Request-Class)
 
   + is an Object
 
@@ -89,7 +91,7 @@ These Modules are:
 
     
 
-+ [The "Static Variables Initializer"]()
++ [The "Static Variables Initializer"](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/init.txt-configuration)
 
   + Initializes Variables from a File
 
@@ -99,7 +101,7 @@ These Modules are:
 
     
 
-+ [The Logger]()
++ [The Logger](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/Logger-Module)
 
   + A small Logger System with **re-usability** in mind
 
@@ -107,7 +109,7 @@ These Modules are:
 
     
 
-+ [The Controller Endpoint]()
++ [The Controller Endpoint](https://github.com/OpenHistoricalDataMap/DownloadWebService/wiki/The-Controller-Endpoint)
 
   + Access-point for the Service Controller
   + is it's own Thread 
