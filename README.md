@@ -2,7 +2,7 @@
 
 ### Introduction
 
-Hi, my name is Note (Tino Geißler) and I'm one of the People who worked on this part of the OHDM Project for about one Semester now. I wasn't really the first one and I probably wont be the last (at least I hope so ^^). 
+Hi, my name is Tino Geißler and I'm one of the People who worked on this part of the OHDM Project for about one Semester now. I wasn't really the first one and I probably wont be the last (at least I hope so ^^). 
 
 (This Service was originally created [here](https://github.com/parafoxx/ohdm-maps) (in Python). My Job was, to rewrite it in Java and put it though further development)
 
